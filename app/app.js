@@ -56,6 +56,8 @@ const el = {
   btnReportCloseTop: document.getElementById('btn-report-close-top'),
   reportSummaryEl: document.getElementById('report-summary'),
   reportBody: document.getElementById('report-body'),
+  btnExport: document.getElementById('btn-export'),
+  inputImport: document.getElementById('input-import'),
   reportFilterBtns: null, // set after DOM ready
   reportSortBtns: null,
 };
@@ -112,6 +114,7 @@ function recordResult(verbId, knew) {
   if (knew) state.progress[verbId].knew += 1;
   else state.progress[verbId].missed += 1;
   state.progress[verbId].history.push(knew);
+  saveProgress();
 }
 
 // Flashcard mode actions
@@ -225,13 +228,13 @@ function setMode(mode) {
   el.btnModeType.classList.toggle('active', mode === 'type');
   el.btnModeFlashcard.setAttribute('aria-pressed', String(mode === 'flashcard'));
   el.btnModeType.setAttribute('aria-pressed', String(mode === 'type'));
+  saveProgress();
   if (state.current) showCard(state.current);
 }
 
 // Filter switching
 
-function setFilter(filter) {
-  state.filter = filter;
+function applyFilterButtons(filter) {
   [
     [el.btnFilterAll, 'all'],
     [el.btnFilterNew, 'new'],
@@ -241,7 +244,67 @@ function setFilter(filter) {
     btn.classList.toggle('active', filter === value);
     btn.setAttribute('aria-pressed', String(filter === value));
   });
+}
+
+function setFilter(filter) {
+  state.filter = filter;
+  applyFilterButtons(filter);
+  saveProgress();
   nextCard();
+}
+
+// Persistence
+
+const STORAGE_KEY = 'ivt-progress';
+
+function saveProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      progress: state.progress,
+      mode: state.mode,
+      filter: state.filter,
+    }));
+  } catch { /* quota exceeded or private mode — ignore */ }
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (saved.progress) state.progress = saved.progress;
+    if (saved.mode) state.mode = saved.mode;
+    if (saved.filter) state.filter = saved.filter;
+  } catch { /* corrupted data — start fresh */ }
+}
+
+function exportProgress() {
+  const blob = new Blob([JSON.stringify({
+    progress: state.progress, mode: state.mode, filter: state.filter,
+  }, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'irregular-verbs-progress.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importProgress(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const saved = JSON.parse(e.target.result);
+      if (saved.progress) state.progress = saved.progress;
+      if (saved.mode) state.mode = saved.mode;
+      if (saved.filter) state.filter = saved.filter;
+      saveProgress();
+      setMode(state.mode);
+      applyFilterButtons(state.filter);
+      hideReport();
+    } catch { /* invalid file — ignore */ }
+  };
+  reader.readAsText(file);
 }
 
 // Report
@@ -368,6 +431,11 @@ el.btnReport.addEventListener('click', () => {
 });
 el.btnReportClose.addEventListener('click', hideReport);
 el.btnReportCloseTop.addEventListener('click', hideReport);
+el.btnExport.addEventListener('click', exportProgress);
+el.inputImport.addEventListener('change', (e) => {
+  if (e.target.files[0]) importProgress(e.target.files[0]);
+  e.target.value = ''; // reset so the same file can be re-imported
+});
 
 // Report filter/sort buttons are queried after DOM is ready
 el.reportFilterBtns = document.querySelectorAll('[data-filter]');
@@ -435,6 +503,9 @@ async function init() {
     if (!res.ok) throw new Error('fetch failed');
     state.verbs = await res.json();
     if (!state.verbs.length) throw new Error('empty');
+    loadProgress();
+    setMode(state.mode);           // safe: state.current is null, won't call showCard
+    applyFilterButtons(state.filter);
     hide(el.loading);
     show(el.cardState);
     showCard(pickWeighted(state.verbs, state.progress));
@@ -444,7 +515,7 @@ async function init() {
   }
 }
 
-export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, enterRetry, finaliseAnswer, state, el };
+export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, enterRetry, finaliseAnswer, saveProgress, loadProgress, exportProgress, importProgress, state, el };
 
 if (typeof process === 'undefined') {
   init();

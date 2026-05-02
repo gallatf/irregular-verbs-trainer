@@ -607,6 +607,69 @@ describe('app integration', () => {
     });
   });
 
+  // ─── persistence ──────────────────────────────────────────────────────────
+
+  describe('saveProgress / loadProgress', () => {
+    let store;
+
+    beforeEach(() => {
+      store = {};
+      vi.stubGlobal('localStorage', {
+        getItem: (k) => store[k] ?? null,
+        setItem: (k, v) => { store[k] = String(v); },
+      });
+      app.state.verbs = [...verbsFixture];
+      app.showCard(goVerb);
+    });
+
+    it('saveProgress writes progress, mode and filter to localStorage', () => {
+      app.state.progress['go'] = { seen: 1, knew: 1, missed: 0, history: [true] };
+      app.state.mode = 'type';
+      app.state.filter = 'difficult';
+      app.saveProgress();
+      const saved = JSON.parse(store['ivt-progress']);
+      expect(saved.progress['go'].knew).toBe(1);
+      expect(saved.mode).toBe('type');
+      expect(saved.filter).toBe('difficult');
+    });
+
+    it('recordResult triggers saveProgress automatically', () => {
+      app.state.mode = 'type';
+      app.showCard(goVerb);
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gone';
+      app.checkAnswer();
+      expect(store['ivt-progress']).toBeDefined();
+      const saved = JSON.parse(store['ivt-progress']);
+      expect(saved.progress['go']).toBeDefined();
+    });
+
+    it('loadProgress restores progress, mode and filter into state', async () => {
+      store['ivt-progress'] = JSON.stringify({
+        progress: { go: { seen: 3, knew: 2, missed: 1, history: [true, false, true] } },
+        mode: 'type',
+        filter: 'new',
+      });
+      await app.init();
+      expect(app.state.progress['go'].knew).toBe(2);
+      expect(app.state.mode).toBe('type');
+      expect(app.state.filter).toBe('new');
+    });
+
+    it('loadProgress is a no-op when localStorage is empty', async () => {
+      await app.init();
+      expect(app.state.progress).toEqual({});
+      expect(app.state.mode).toBe('flashcard');
+      expect(app.state.filter).toBe('all');
+    });
+
+    it('loadProgress ignores corrupted JSON without throwing', async () => {
+      store['ivt-progress'] = 'not-valid-json{{{';
+      await expect(app.init()).resolves.not.toThrow();
+      expect(app.state.progress).toEqual({});
+    });
+  });
+
   // ─── report ────────────────────────────────────────────────────────────────
 
   describe('report', () => {

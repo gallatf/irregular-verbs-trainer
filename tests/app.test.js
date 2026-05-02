@@ -426,6 +426,105 @@ describe('app integration', () => {
     });
   });
 
+  // ─── near-miss retry ──────────────────────────────────────────────────────
+
+  describe('near-miss retry (type mode)', () => {
+    beforeEach(() => {
+      app.state.verbs = [...verbsFixture];
+      app.state.mode = 'type';
+      app.showCard(goVerb); // go / went / gone
+    });
+
+    it('shows retry hint and keeps input form visible on a near-miss', () => {
+      app.el.inputPS.value = 'wент'; // completely wrong — use a real near-miss below
+      // Use a 1-char substitution: 'gane' instead of 'gone'
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane'; // near-miss: 'a' instead of 'o'
+      app.checkAnswer();
+      expect(app.el.retryHint.classList.contains('hidden')).toBe(false);
+      expect(app.el.inputForm.classList.contains('hidden')).toBe(false);
+    });
+
+    it('does not record a result on near-miss (waits for retry)', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane';
+      app.checkAnswer();
+      expect(app.state.progress['go']).toBeUndefined();
+      expect(app.state.session.seen).toBe(0);
+    });
+
+    it('sets state.retrying to true on near-miss', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane';
+      app.checkAnswer();
+      expect(app.state.retrying).toBe(true);
+    });
+
+    it('adds near-miss class to the near-miss input only', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane';
+      app.checkAnswer();
+      expect(app.el.inputPP.className).toBe('near-miss');
+      expect(app.el.inputPS.className).toBe('');
+    });
+
+    it('does not offer retry for a clear error (not near-miss)', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'wrong'; // completely wrong
+      app.checkAnswer();
+      expect(app.el.retryHint.classList.contains('hidden')).toBe(true);
+      expect(app.el.typeResult.classList.contains('hidden')).toBe(false);
+    });
+
+    it('does not offer retry when all answers are correct', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gone';
+      app.checkAnswer();
+      expect(app.el.retryHint.classList.contains('hidden')).toBe(true);
+      expect(app.el.typeResult.classList.contains('hidden')).toBe(false);
+    });
+
+    it('records as knew when retry answer is correct', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane'; // near-miss
+      app.checkAnswer();             // → retry mode
+      app.el.inputPP.value = 'gone'; // fix the typo
+      app.checkAnswer();             // → finalise
+      expect(app.state.progress['go'].knew).toBe(1);
+      expect(app.state.progress['go'].missed).toBe(0);
+      expect(app.state.session.seen).toBe(1);
+    });
+
+    it('records as missed when retry answer is still wrong', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane'; // near-miss
+      app.checkAnswer();
+      app.el.inputPP.value = 'gune'; // still wrong
+      app.checkAnswer();
+      expect(app.state.progress['go'].missed).toBe(1);
+      expect(app.state.progress['go'].knew).toBe(0);
+    });
+
+    it('does not offer a second retry even if retry answer is also near-miss', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane'; // near-miss → retry
+      app.checkAnswer();
+      app.el.inputPP.value = 'gune'; // another near-miss on retry
+      app.checkAnswer();             // must finalise, not enter retry again
+      expect(app.el.typeResult.classList.contains('hidden')).toBe(false);
+      expect(app.state.retrying).toBe(false);
+    });
+
+    it('hides retry hint and resets retrying when next card is shown', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gane';
+      app.checkAnswer();
+      app.showCard(goVerb);
+      expect(app.el.retryHint.classList.contains('hidden')).toBe(true);
+      expect(app.state.retrying).toBe(false);
+    });
+  });
+
   // ─── filter switching ──────────────────────────────────────────────────────
 
   describe('setFilter', () => {

@@ -443,6 +443,22 @@ h1 {
   outline-offset: -2px;
 }
 
+/* Retry hint banner (near-miss second chance) */
+
+.retry-hint {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  width: 100%;
+}
+
+.retry-hint.hidden { display: none; }
+
 /* Input form (type mode) */
 
 .card-inputs {
@@ -482,6 +498,14 @@ h1 {
 
 .input-row input:focus {
   border-color: #0066cc;
+}
+
+.input-row input.near-miss {
+  border-color: #f59e0b;
+}
+
+.input-row input.near-miss:focus {
+  border-color: #d97706;
 }
 
 /* Type result panel */

@@ -1,4 +1,4 @@
-import { normalizeInput, matchesExpected, verbStatus, filteredDeck, pickWeighted, recentAccuracy, verbTrend, currentStreak, reportRow, reportSummary } from '../app/logic.js';
+import { normalizeInput, matchesExpected, isNearMiss, verbStatus, filteredDeck, pickWeighted, recentAccuracy, verbTrend, currentStreak, reportRow, reportSummary } from '../app/logic.js';
 
 describe('normalizeInput', () => {
   it('trims leading whitespace', () => {
@@ -71,6 +71,57 @@ describe('matchesExpected — slash-separated alternatives', () => {
 
   it('handles a three-way alternative', () => {
     expect(matchesExpected('b', 'a/b/c')).toBe(true);
+  });
+});
+
+describe('isNearMiss', () => {
+  it('returns false for an exact match', () => {
+    expect(isNearMiss('broken', 'broken')).toBe(false);
+  });
+
+  it('returns false for an exact match after normalisation', () => {
+    expect(isNearMiss('  BROKEN  ', 'broken')).toBe(false);
+  });
+
+  it('returns true for a 1-char substitution', () => {
+    expect(isNearMiss('brokan', 'broken')).toBe(true); // a instead of e
+  });
+
+  it('returns true for an adjacent transposition', () => {
+    expect(isNearMiss('borken', 'broken')).toBe(true); // r↔o swapped
+  });
+
+  it('returns false for a non-adjacent transposition', () => {
+    // swap positions 0 and 2: "broken" → "orbken" (b↔o, not adjacent)
+    expect(isNearMiss('orbken', 'broken')).toBe(false);
+  });
+
+  it('returns false for a deletion (different length)', () => {
+    expect(isNearMiss('brken', 'broken')).toBe(false);
+  });
+
+  it('returns false for an insertion (different length)', () => {
+    expect(isNearMiss('brokken', 'broken')).toBe(false);
+  });
+
+  it('returns false for 2 substitutions', () => {
+    expect(isNearMiss('brakan', 'broken')).toBe(false); // positions 2 and 4 wrong
+  });
+
+  it('returns false for a completely wrong answer', () => {
+    expect(isNearMiss('went', 'broken')).toBe(false);
+  });
+
+  it('returns true when input matches a slash-separated variant', () => {
+    expect(isNearMiss('wes', 'was/were')).toBe(true); // 'wes' vs 'was': 1 substitution
+  });
+
+  it('returns false when no slash variant is a near-miss', () => {
+    expect(isNearMiss('gone', 'was/were')).toBe(false);
+  });
+
+  it('is case-insensitive', () => {
+    expect(isNearMiss('Brokan', 'broken')).toBe(true);
   });
 });
 

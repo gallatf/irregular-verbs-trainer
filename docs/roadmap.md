@@ -25,13 +25,7 @@
 - Filterable: Difficult / All practiced / Known / All
 - Sortable: Accuracy / Verb / Attempts
 
-## Phase 5: Better learning support
-- Czech translations
-- Example sentences
-- Pronunciation
-- Verb groups and patterns
-
-## Phase 6: Persistence
+## Phase 5: Persistence
 - Save progress
 - Restore previous practice state
 - Export/import progress

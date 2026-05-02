@@ -1,9 +1,10 @@
-import { normalizeInput, matchesExpected, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary } from './logic.js';
+import { normalizeInput, matchesExpected, isNearMiss, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary } from './logic.js';
 
 const state = {
   verbs: [],
   current: null,
   mode: 'flashcard', // 'flashcard' | 'type'
+  retrying: false,   // true while awaiting a near-miss second attempt
   filter: 'all',    // 'all' | 'new' | 'difficult' | 'due'
   progress: {},     // { [verbId]: { seen, knew, missed, history: boolean[] } }
   session: { seen: 0, knew: 0, missed: 0 },
@@ -36,6 +37,7 @@ const el = {
   statSeen: document.getElementById('stat-seen'),
   statKnew: document.getElementById('stat-knew'),
   statMissed: document.getElementById('stat-missed'),
+  retryHint: document.getElementById('retry-hint'),
   btnReveal: document.getElementById('btn-reveal'),
   btnKnew: document.getElementById('btn-knew'),
   btnMissed: document.getElementById('btn-missed'),
@@ -63,12 +65,14 @@ function hide(element) { element.classList.add('hidden'); }
 
 function showCard(verb) {
   state.current = verb;
+  state.retrying = false;
   el.card.classList.remove('card--incorrect', 'card--correct');
   el.infinitive.textContent = verb.infinitive;
   el.pastSimple.textContent = verb.pastSimple;
   el.pastParticiple.textContent = verb.pastParticiple;
 
   hide(el.answer);
+  hide(el.retryHint);
 
   if (state.mode === 'flashcard') {
     hide(el.inputForm);
@@ -136,10 +140,34 @@ function checkAnswer() {
   const ppCorrect = matchesExpected(el.inputPP.value, verb.pastParticiple);
   const allCorrect = psCorrect && ppCorrect;
 
-  hide(el.inputForm);
-  showResult(el.inputPS.value, el.inputPP.value, psCorrect, ppCorrect, verb);
+  if (!state.retrying && !allCorrect) {
+    const psNearMiss = !psCorrect && isNearMiss(el.inputPS.value, verb.pastSimple);
+    const ppNearMiss = !ppCorrect && isNearMiss(el.inputPP.value, verb.pastParticiple);
+    if ((psCorrect || psNearMiss) && (ppCorrect || ppNearMiss)) {
+      enterRetry(psNearMiss, ppNearMiss);
+      return;
+    }
+  }
 
-  recordResult(verb.id, allCorrect);
+  finaliseAnswer(psCorrect, ppCorrect, allCorrect);
+}
+
+function enterRetry(psNearMiss, ppNearMiss) {
+  state.retrying = true;
+  show(el.retryHint);
+  el.inputPS.className = psNearMiss ? 'near-miss' : '';
+  el.inputPP.className = ppNearMiss ? 'near-miss' : '';
+  // Defer focus to avoid Chromium synthetic keydown on the newly focused element.
+  setTimeout(() => { (psNearMiss ? el.inputPS : el.inputPP).focus(); }, 0);
+}
+
+function finaliseAnswer(psCorrect, ppCorrect, allCorrect) {
+  state.retrying = false;
+  hide(el.retryHint);
+  hide(el.inputForm);
+  showResult(el.inputPS.value, el.inputPP.value, psCorrect, ppCorrect, state.current);
+
+  recordResult(state.current.id, allCorrect);
   state.session.seen += 1;
   if (allCorrect) state.session.knew += 1;
   else state.session.missed += 1;
@@ -416,7 +444,7 @@ async function init() {
   }
 }
 
-export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, state, el };
+export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, enterRetry, finaliseAnswer, state, el };
 
 if (typeof process === 'undefined') {
   init();

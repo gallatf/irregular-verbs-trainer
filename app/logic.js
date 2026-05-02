@@ -2,6 +2,31 @@ export function normalizeInput(s) {
   return s.trim().toLowerCase();
 }
 
+// Single-variant helper: true if a and b differ by exactly 1 substitution
+// or 1 adjacent transposition (same length required).
+function nearMissOne(a, b) {
+  if (a === b || a.length !== b.length) return false;
+  const diffs = [];
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) diffs.push(i);
+    if (diffs.length > 2) return false;
+  }
+  if (diffs.length === 1) return true; // substitution
+  if (diffs.length === 2) {
+    const [i, j] = diffs;
+    return j === i + 1 && a[i] === b[j] && a[j] === b[i]; // transposition
+  }
+  return false;
+}
+
+// Returns true when input is wrong but only 1 substitution or 1 adjacent
+// transposition away from any slash-separated variant of expected.
+export function isNearMiss(input, expected) {
+  const norm = normalizeInput(input);
+  const variants = expected.split('/').map(v => v.trim().toLowerCase());
+  return variants.some(v => nearMissOne(norm, v));
+}
+
 export function matchesExpected(input, expected) {
   const norm = normalizeInput(input);
   return expected.split('/').map(v => v.trim().toLowerCase()).includes(norm);

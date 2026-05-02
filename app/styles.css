@@ -696,6 +696,142 @@ h1 {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* Help button */
+
+.btn-help-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 1px solid #0066cc;
+  background: #fff;
+  color: #0066cc;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.btn-help-icon:hover {
+  background: #0066cc;
+  color: #fff;
+}
+
+.btn-help-icon:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Help panel */
+
+.help-close-row {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.help-close-row:last-child {
+  margin-bottom: 0;
+  margin-top: 1.5rem;
+}
+
+.help-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  text-align: left;
+}
+
+.help-section {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: 1rem 1.25rem;
+}
+
+.help-heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+  margin-bottom: 0.625rem;
+}
+
+.help-dl dt {
+  font-weight: 600;
+  color: #111;
+  font-size: 0.9375rem;
+  margin-top: 0.5rem;
+}
+
+.help-dl dt:first-child {
+  margin-top: 0;
+}
+
+.help-dl dd {
+  color: #555;
+  font-size: 0.875rem;
+  margin-left: 0;
+  margin-top: 0.15rem;
+}
+
+.help-p {
+  font-size: 0.9375rem;
+  color: #444;
+  line-height: 1.55;
+}
+
+.help-p em {
+  font-style: italic;
+}
+
+.help-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.help-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  padding: 0 0 0.4rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.help-table td {
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #f5f5f5;
+  color: #444;
+  vertical-align: middle;
+}
+
+.help-table tr:last-child td {
+  border-bottom: none;
+}
+
+.help-table td:first-child {
+  white-space: nowrap;
+  padding-right: 1rem;
+}
+
+.help-table kbd {
+  font-family: inherit;
+  font-size: 0.8em;
+  background: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+}
+
 /* Loading / error states */
 
 .state {

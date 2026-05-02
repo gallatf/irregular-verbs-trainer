@@ -27,10 +27,75 @@
           <button id="btn-filter-all" class="filter-btn active" aria-pressed="true">All</button>
         </div>
         <button id="btn-report" class="btn-report">Report</button>
+        <button id="btn-help" class="btn-help-icon" aria-label="Help">?</button>
       </div>
     </header>
 
     <main>
+      <div id="help-state" class="state hidden">
+        <div class="help-close-row">
+          <button id="btn-help-close" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>
+        </div>
+
+        <div class="help-content">
+          <section class="help-section">
+            <h2 class="help-heading">Modes</h2>
+            <dl class="help-dl">
+              <dt>Flashcard</dt>
+              <dd>See the infinitive, recall both forms yourself, then reveal the answer and rate whether you knew it.</dd>
+              <dt>Type it</dt>
+              <dd>Type the past simple and past participle directly and submit to check your answer.</dd>
+            </dl>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">Filters</h2>
+            <dl class="help-dl">
+              <dt>All</dt>
+              <dd>Practise every verb in the set.</dd>
+              <dt>New + Difficult</dt>
+              <dd>Focus on verbs you haven't seen yet and ones you find hard — the most efficient way to study.</dd>
+              <dt>New</dt>
+              <dd>Only verbs you haven't practised at all.</dd>
+              <dt>Difficult</dt>
+              <dd>Only verbs where you've missed more than you knew.</dd>
+            </dl>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">How verbs are selected</h2>
+            <p class="help-p">Each card is picked at random, but difficult verbs appear more often than easy ones. Recent answers count more than older ones — so a verb you got right three times in a row gradually fades into the background, while one you keep missing comes up more often. The same verb never appears twice in a row.</p>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">Near-miss retry (Type it mode)</h2>
+            <p class="help-p">If your answer is only one character wrong, or has two adjacent characters swapped (e.g. <em>borken</em> instead of <em>broken</em>), you get a second attempt. The amber border shows which field needs fixing. Getting it right on the retry counts as a correct answer.</p>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">Progress &amp; persistence</h2>
+            <p class="help-p">Your progress is saved automatically in your browser after every card and restored when you reopen the page. Open the <strong>Report</strong> to see your stats and to export or import a JSON backup of your progress.</p>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">Keyboard shortcuts</h2>
+            <table class="help-table">
+              <thead><tr><th>Key</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td><kbd>Space</kbd> / <kbd>Enter</kbd></td><td>Reveal answer (Flashcard mode)</td></tr>
+                <tr><td><kbd>←</kbd></td><td>"Didn't know it" (Flashcard mode)</td></tr>
+                <tr><td><kbd>Enter</kbd></td><td>Move to next field / submit / next card</td></tr>
+                <tr><td><kbd>Esc</kbd></td><td>Close Help or Report panel</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </div>
+
+        <div class="help-close-row">
+          <button id="btn-help-close-bottom" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>
+        </div>
+      </div>
+
       <div id="report-state" class="state hidden">
         <div class="report-actions">
           <button id="btn-report-close-top" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>

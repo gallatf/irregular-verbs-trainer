@@ -51,6 +51,10 @@ const el = {
   btnFilterDue: document.getElementById('btn-filter-due'),
   btnFilterReset: document.getElementById('btn-filter-reset'),
   btnReport: document.getElementById('btn-report'),
+  btnHelp: document.getElementById('btn-help'),
+  helpState: document.getElementById('help-state'),
+  btnHelpClose: document.getElementById('btn-help-close'),
+  btnHelpCloseBottom: document.getElementById('btn-help-close-bottom'),
   reportState: document.getElementById('report-state'),
   btnReportClose: document.getElementById('btn-report-close'),
   btnReportCloseTop: document.getElementById('btn-report-close-top'),
@@ -378,6 +382,23 @@ function setReportSort(sort) {
   renderReportTable();
 }
 
+// Help
+
+function showHelp() {
+  hide(el.cardState);
+  hide(el.emptyFilter);
+  hide(el.reportState);
+  show(el.helpState);
+  el.btnHelpClose.focus();
+}
+
+function hideHelp() {
+  hide(el.helpState);
+  const deck = filteredDeck(state.verbs, state.filter, state.progress);
+  if (!deck.length) show(el.emptyFilter);
+  else show(el.cardState);
+}
+
 function showReport() {
   el.btnReport.textContent = 'Practice';
   renderReportSummary();
@@ -429,6 +450,9 @@ el.btnReport.addEventListener('click', () => {
   if (el.reportState.classList.contains('hidden')) showReport();
   else hideReport();
 });
+el.btnHelp.addEventListener('click', showHelp);
+el.btnHelpClose.addEventListener('click', hideHelp);
+el.btnHelpCloseBottom.addEventListener('click', hideHelp);
 el.btnReportClose.addEventListener('click', hideReport);
 el.btnReportCloseTop.addEventListener('click', hideReport);
 el.btnExport.addEventListener('click', exportProgress);
@@ -476,6 +500,10 @@ el.btnNext.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (!el.helpState.classList.contains('hidden')) { hideHelp(); return; }
+    if (!el.reportState.classList.contains('hidden')) { hideReport(); return; }
+  }
   if (state.mode === 'flashcard') {
     if ((e.key === ' ' || e.key === 'Enter') && !el.revealArea.classList.contains('hidden')) {
       if (document.activeElement === document.body || document.activeElement === el.btnReveal) {
@@ -515,7 +543,7 @@ async function init() {
   }
 }
 
-export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, enterRetry, finaliseAnswer, saveProgress, loadProgress, exportProgress, importProgress, state, el };
+export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showHelp, hideHelp, showReport, hideReport, showResult, setResultRow, enterRetry, finaliseAnswer, saveProgress, loadProgress, exportProgress, importProgress, state, el };
 
 if (typeof process === 'undefined') {
   init();

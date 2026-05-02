@@ -1,0 +1,419 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #f5f5f5;
+  color: #222;
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Header */
+
+header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #444;
+  letter-spacing: 0.02em;
+}
+
+.stats {
+  display: flex;
+  gap: 1.25rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.stats strong {
+  color: #222;
+}
+
+/* States */
+
+.state.hidden {
+  display: none;
+}
+
+/* Card */
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+.card-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #999;
+}
+
+.card-infinitive {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #111;
+  text-align: center;
+}
+
+.card-answer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.25rem;
+}
+
+.card-answer.hidden {
+  display: none;
+}
+
+.answer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.answer-label {
+  font-size: 0.8125rem;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.answer-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1a5c2a;
+  text-align: right;
+}
+
+/* Actions */
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.actions.hidden {
+  display: none;
+}
+
+/* Buttons */
+
+.btn {
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 0.75rem 1.75rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  min-width: 120px;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+.btn-primary {
+  background: #0066cc;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #0052a3;
+}
+
+.btn-knew {
+  background: #1a5c2a;
+  color: #fff;
+  flex: 1;
+  max-width: 200px;
+}
+
+.btn-knew:hover {
+  background: #144821;
+}
+
+.btn-missed {
+  background: #b91c1c;
+  color: #fff;
+  flex: 1;
+  max-width: 200px;
+}
+
+.btn-missed:hover {
+  background: #991b1b;
+}
+
+/* Mode toggle */
+
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.4rem 1.1rem;
+  border: none;
+  background: #fff;
+  color: #666;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.mode-btn:first-child {
+  border-right: 1px solid #ddd;
+}
+
+.mode-btn.active {
+  background: #0066cc;
+  color: #fff;
+}
+
+.mode-btn:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: -2px;
+}
+
+/* Input form (type mode) */
+
+.card-inputs {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.25rem;
+}
+
+.card-inputs.hidden {
+  display: none;
+}
+
+.input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.input-row label {
+  font-size: 0.8125rem;
+  color: #888;
+}
+
+.input-row input {
+  font-size: 1rem;
+  font-family: inherit;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid #ddd;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+
+.input-row input:focus {
+  border-color: #0066cc;
+}
+
+/* Type result panel */
+
+.type-result {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border-top: 1px solid #eee;
+  padding-top: 1.25rem;
+}
+
+.type-result.hidden {
+  display: none;
+}
+
+.type-result:focus {
+  outline: none;
+}
+
+.result-banner {
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+}
+
+.result-banner.correct {
+  background: #f0faf2;
+  color: #1a5c2a;
+}
+
+.result-banner.incorrect {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.result-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.result-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.result-label {
+  font-size: 0.8125rem;
+  color: #888;
+  flex-shrink: 0;
+  min-width: 7rem;
+}
+
+.result-user {
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.result-user.correct {
+  color: #1a5c2a;
+}
+
+.result-user.incorrect {
+  color: #b91c1c;
+  text-decoration: line-through;
+}
+
+.result-correct {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: #1a5c2a;
+}
+
+.result-correct::before {
+  content: '→ ';
+  font-weight: 400;
+  color: #aaa;
+}
+
+.result-correct.hidden {
+  display: none;
+}
+
+/* Correct answer state — card flushes green */
+
+.card--correct {
+  background: #22c55e;
+}
+
+.card--correct .card-label,
+.card--correct .card-infinitive {
+  color: #fff;
+}
+
+.card--correct .type-result {
+  border-top-color: rgba(255, 255, 255, 0.25);
+}
+
+.card--correct .result-banner.correct {
+  background: rgba(0, 0, 0, 0.1);
+  color: #fff;
+}
+
+.card--correct .result-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.card--correct .result-user.correct {
+  color: #fff;
+}
+
+/* Incorrect answer state — card flushes red */
+
+.card--incorrect {
+  background: #ef4444;
+}
+
+.card--incorrect .card-label,
+.card--incorrect .card-infinitive {
+  color: #fff;
+}
+
+.card--incorrect .type-result {
+  border-top-color: rgba(255, 255, 255, 0.25);
+}
+
+.card--incorrect .result-banner.incorrect {
+  background: rgba(0, 0, 0, 0.15);
+  color: #fff;
+}
+
+.card--incorrect .result-label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.card--incorrect .result-user.incorrect {
+  color: #fff;
+}
+
+.card--incorrect .result-user.correct {
+  color: #bbf7d0;
+}
+
+.card--incorrect .result-correct {
+  color: #bbf7d0;
+}
+
+.card--incorrect .result-correct::before {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Loading / error states */
+
+.state {
+  text-align: center;
+  color: #666;
+  padding: 3rem 1rem;
+}

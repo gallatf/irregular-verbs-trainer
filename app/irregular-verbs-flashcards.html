@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Irregular Verbs Trainer</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>Irregular Verbs</h1>
+      <div class="mode-toggle" role="group" aria-label="Practice mode">
+        <button id="btn-mode-flashcard" class="mode-btn active" aria-pressed="true">Flashcard</button>
+        <button id="btn-mode-type" class="mode-btn" aria-pressed="false">Type it</button>
+      </div>
+      <div id="stats" class="stats" aria-live="polite">
+        <span>Seen: <strong id="stat-seen">0</strong></span>
+        <span>Knew: <strong id="stat-knew">0</strong></span>
+        <span>Missed: <strong id="stat-missed">0</strong></span>
+      </div>
+    </header>
+
+    <main>
+      <div id="error-state" class="state hidden">
+        <p>Failed to load verb data. Please serve the app via a local HTTP server.</p>
+      </div>
+
+      <div id="loading-state" class="state">
+        <p>Loading...</p>
+      </div>
+
+      <div id="card-state" class="state hidden">
+        <div id="card" class="card">
+          <div class="card-label">Infinitive</div>
+          <div id="infinitive" class="card-infinitive"></div>
+
+          <div id="answer" class="card-answer hidden">
+            <div class="answer-row">
+              <span class="answer-label">Past simple</span>
+              <span id="past-simple" class="answer-value"></span>
+            </div>
+            <div class="answer-row">
+              <span class="answer-label">Past participle</span>
+              <span id="past-participle" class="answer-value"></span>
+            </div>
+          </div>
+
+          <div id="input-form" class="card-inputs hidden">
+            <div class="input-row">
+              <label for="input-past-simple">Past simple</label>
+              <input id="input-past-simple" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type here…">
+            </div>
+            <div class="input-row">
+              <label for="input-past-participle">Past participle</label>
+              <input id="input-past-participle" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="type here…">
+            </div>
+          </div>
+
+          <div id="type-result" class="type-result hidden" aria-live="polite" tabindex="-1">
+            <div id="result-banner" class="result-banner"></div>
+            <div class="result-rows">
+              <div class="result-row">
+                <span class="result-label">Past simple</span>
+                <span id="result-ps-user" class="result-user"></span>
+                <span id="result-ps-correct" class="result-correct hidden"></span>
+              </div>
+              <div class="result-row">
+                <span class="result-label">Past participle</span>
+                <span id="result-pp-user" class="result-user"></span>
+                <span id="result-pp-correct" class="result-correct hidden"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="reveal-area" class="actions">
+          <button id="btn-reveal" class="btn btn-primary">Reveal</button>
+        </div>
+
+        <div id="rating-area" class="actions hidden">
+          <button id="btn-knew" class="btn btn-knew">I knew it</button>
+          <button id="btn-missed" class="btn btn-missed">I didn't know it</button>
+        </div>
+
+        <div id="type-submit-area" class="actions hidden">
+          <button id="btn-check" class="btn btn-primary">Check</button>
+        </div>
+
+        <div id="type-next-area" class="actions hidden">
+          <button id="btn-next" class="btn btn-primary">Next</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

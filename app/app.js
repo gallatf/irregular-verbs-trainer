@@ -8,7 +8,7 @@ const state = {
   filter: 'all',    // 'all' | 'new' | 'difficult' | 'due'
   progress: {},     // { [verbId]: { seen, knew, missed, history: boolean[] } }
   session: { seen: 0, knew: 0, missed: 0 },
-  report: { filter: 'difficult', sort: 'accuracy' },
+  report: { filter: 'all', sort: 'accuracy' },
 };
 
 const el = {

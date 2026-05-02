@@ -88,19 +88,30 @@ export function reportSummary(verbs, progress) {
   return { practiced, totalAttempts, accuracy, mastered, difficult, notSeen };
 }
 
-// Picks a verb with probability proportional to its difficulty weight.
-// Weight = max(1, 1 + missed - knew): missed verbs appear more often.
-export function pickWeighted(verbs, progress) {
-  const weights = verbs.map(v => {
+// Recency-biased weight: each past attempt contributes ±DECAY^age.
+// Misses add weight (verb repeats more), correct answers subtract it.
+const DECAY = 0.75;
+
+export function pickWeighted(verbs, progress, excludeId = null) {
+  const pool = (excludeId && verbs.length > 1)
+    ? verbs.filter(v => v.id !== excludeId)
+    : verbs;
+  const weights = pool.map(v => {
     const p = progress[v.id];
-    if (!p || p.seen === 0) return 1;
-    return Math.max(1, 1 + p.missed - p.knew);
+    if (!p || !p.history || p.history.length === 0) return 1;
+    let score = 0;
+    const h = p.history;
+    for (let i = 0; i < h.length; i++) {
+      const age = h.length - 1 - i; // 0 = most recent
+      score += Math.pow(DECAY, age) * (h[i] ? -1 : +1);
+    }
+    return Math.max(1, 1 + score);
   });
   const total = weights.reduce((a, b) => a + b, 0);
   let r = Math.random() * total;
-  for (let i = 0; i < verbs.length; i++) {
+  for (let i = 0; i < pool.length; i++) {
     r -= weights[i];
-    if (r <= 0) return verbs[i];
+    if (r <= 0) return pool[i];
   }
-  return verbs[verbs.length - 1];
+  return pool[pool.length - 1];
 }

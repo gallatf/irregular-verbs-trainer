@@ -154,14 +154,26 @@ describe('pickWeighted', () => {
     }
   });
 
+  it('never returns the excluded verb when alternatives exist', () => {
+    const verbs = [{ id: 'go' }, { id: 'be' }, { id: 'run' }];
+    for (let i = 0; i < 30; i++) {
+      expect(pickWeighted(verbs, {}, 'go').id).not.toBe('go');
+    }
+  });
+
+  it('returns the only verb even when it is excluded', () => {
+    const verbs = [{ id: 'go' }];
+    expect(pickWeighted(verbs, {}, 'go').id).toBe('go');
+  });
+
   it('gives a difficult verb higher weight than a known verb', () => {
     const difficult = { id: 'go' };
     const known = { id: 'be' };
     const progress = {
-      go: { seen: 3, knew: 0, missed: 3 }, // weight = 4
-      be: { seen: 3, knew: 3, missed: 0 }, // weight = 1
+      go: { seen: 3, knew: 0, missed: 3, history: [false, false, false] }, // weight ≈ 3.3
+      be: { seen: 3, knew: 3, missed: 0, history: [true, true, true] },    // weight = 1
     };
-    // With weight 4:1, difficult should win the vast majority of 200 trials
+    // Decay-weighted: difficult verb wins ~77% of trials (3.3:1 ratio)
     let difficultCount = 0;
     for (let i = 0; i < 200; i++) {
       if (pickWeighted([difficult, known], progress).id === 'go') difficultCount++;

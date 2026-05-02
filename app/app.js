@@ -186,7 +186,7 @@ function nextCard() {
   }
   hide(el.emptyFilter);
   show(el.cardState);
-  showCard(pickWeighted(deck, state.progress));
+  showCard(pickWeighted(deck, state.progress, state.current?.id));
 }
 
 // Mode switching

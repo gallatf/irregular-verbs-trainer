@@ -368,5 +368,141 @@ describe('app integration', () => {
       expect(app.state.session.missed).toBe(1);
       expect(app.state.session.knew).toBe(0);
     });
+
+    it('"I knew it" records knew in progress for the verb', () => {
+      app.el.btnReveal.click();
+      app.el.btnKnew.click();
+      expect(app.state.progress['go'].knew).toBe(1);
+      expect(app.state.progress['go'].missed).toBe(0);
+    });
+
+    it('"I didn\'t know it" records missed in progress for the verb', () => {
+      app.el.btnReveal.click();
+      app.el.btnMissed.click();
+      expect(app.state.progress['go'].missed).toBe(1);
+      expect(app.state.progress['go'].knew).toBe(0);
+    });
+  });
+
+  // ─── progress tracking in type mode ───────────────────────────────────────
+
+  describe('progress tracking (type mode)', () => {
+    beforeEach(() => {
+      app.state.verbs = [...verbsFixture];
+      app.state.mode = 'type';
+      app.showCard(goVerb);
+    });
+
+    it('records a correct answer in progress', () => {
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gone';
+      app.checkAnswer();
+      expect(app.state.progress['go'].knew).toBe(1);
+      expect(app.state.progress['go'].missed).toBe(0);
+      expect(app.state.progress['go'].seen).toBe(1);
+    });
+
+    it('records an incorrect answer in progress', () => {
+      app.el.inputPS.value = 'goed';
+      app.el.inputPP.value = 'goned';
+      app.checkAnswer();
+      expect(app.state.progress['go'].missed).toBe(1);
+      expect(app.state.progress['go'].knew).toBe(0);
+    });
+
+    it('accumulates progress across multiple attempts', () => {
+      app.el.inputPS.value = 'goed';
+      app.el.inputPP.value = 'goned';
+      app.checkAnswer();
+      app.showCard(goVerb);
+      app.el.inputPS.value = 'went';
+      app.el.inputPP.value = 'gone';
+      app.checkAnswer();
+      expect(app.state.progress['go'].seen).toBe(2);
+      expect(app.state.progress['go'].missed).toBe(1);
+      expect(app.state.progress['go'].knew).toBe(1);
+    });
+  });
+
+  // ─── filter switching ──────────────────────────────────────────────────────
+
+  describe('setFilter', () => {
+    beforeEach(() => {
+      app.state.verbs = [...verbsFixture];
+      app.state.filter = 'all';
+      app.showCard(goVerb);
+    });
+
+    it('updates active class on filter buttons', () => {
+      app.setFilter('difficult');
+      expect(app.el.btnFilterDifficult.classList.contains('active')).toBe(true);
+      expect(app.el.btnFilterAll.classList.contains('active')).toBe(false);
+      expect(app.el.btnFilterNew.classList.contains('active')).toBe(false);
+    });
+
+    it('updates aria-pressed on filter buttons', () => {
+      app.setFilter('new');
+      expect(app.el.btnFilterNew.getAttribute('aria-pressed')).toBe('true');
+      expect(app.el.btnFilterAll.getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('shows empty-filter state when no verbs match the filter', () => {
+      // no progress yet → no difficult verbs
+      app.setFilter('difficult');
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(false);
+      expect(app.el.cardState.classList.contains('hidden')).toBe(true);
+    });
+
+    it('hides empty-filter state and shows card when switching back to all', () => {
+      app.setFilter('difficult'); // goes empty
+      app.setFilter('all');
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(true);
+      expect(app.el.cardState.classList.contains('hidden')).toBe(false);
+    });
+
+    it('btn-filter-reset switches back to all filter', () => {
+      app.setFilter('difficult');
+      app.el.btnFilterReset.click();
+      expect(app.state.filter).toBe('all');
+      expect(app.el.cardState.classList.contains('hidden')).toBe(false);
+    });
+
+    it('"difficult" filter shows verbs that have been missed more than knew', () => {
+      app.state.progress['go'] = { seen: 2, knew: 0, missed: 2 };
+      app.setFilter('difficult');
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(true);
+      expect(app.el.cardState.classList.contains('hidden')).toBe(false);
+    });
+
+    it('"new" filter shows only unseen verbs', () => {
+      // mark both verbs as seen
+      app.state.progress['go'] = { seen: 1, knew: 1, missed: 0 };
+      app.state.progress['be'] = { seen: 1, knew: 1, missed: 0 };
+      app.setFilter('new');
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(false);
+    });
+
+    it('"due" filter includes new and difficult, excludes known', () => {
+      // go: difficult, be: known
+      app.state.progress['go'] = { seen: 2, knew: 0, missed: 2 };
+      app.state.progress['be'] = { seen: 2, knew: 2, missed: 0 };
+      app.setFilter('due');
+      // deck has go (difficult) — card state should be visible
+      expect(app.el.cardState.classList.contains('hidden')).toBe(false);
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(true);
+    });
+
+    it('"due" filter is empty when all verbs are known', () => {
+      app.state.progress['go'] = { seen: 2, knew: 2, missed: 0 };
+      app.state.progress['be'] = { seen: 2, knew: 2, missed: 0 };
+      app.setFilter('due');
+      expect(app.el.emptyFilter.classList.contains('hidden')).toBe(false);
+    });
+
+    it('"due" button becomes active when selected', () => {
+      app.setFilter('due');
+      expect(app.el.btnFilterDue.classList.contains('active')).toBe(true);
+      expect(app.el.btnFilterAll.classList.contains('active')).toBe(false);
+    });
   });
 });

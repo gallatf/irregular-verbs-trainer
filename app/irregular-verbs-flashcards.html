@@ -19,9 +19,20 @@
         <span>Knew: <strong id="stat-knew">0</strong></span>
         <span>Missed: <strong id="stat-missed">0</strong></span>
       </div>
+      <div class="filter-toggle" role="group" aria-label="Verb filter">
+        <button id="btn-filter-due" class="filter-btn active" aria-pressed="true">New + Difficult</button>
+        <button id="btn-filter-new" class="filter-btn" aria-pressed="false">New</button>
+        <button id="btn-filter-difficult" class="filter-btn" aria-pressed="false">Difficult</button>
+        <button id="btn-filter-all" class="filter-btn" aria-pressed="false">All</button>
+      </div>
     </header>
 
     <main>
+      <div id="empty-filter-state" class="state hidden">
+        <p>No verbs match this filter yet.</p>
+        <button id="btn-filter-reset" class="btn btn-primary" style="margin-top:1rem">Show all verbs</button>
+      </div>
+
       <div id="error-state" class="state hidden">
         <p>Failed to load verb data. Please serve the app via a local HTTP server.</p>
       </div>

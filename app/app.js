@@ -1,9 +1,11 @@
-import { normalizeInput, matchesExpected, pickRandom } from './logic.js';
+import { normalizeInput, matchesExpected, pickWeighted, filteredDeck } from './logic.js';
 
 const state = {
   verbs: [],
   current: null,
   mode: 'flashcard', // 'flashcard' | 'type'
+  filter: 'due',    // 'all' | 'new' | 'difficult' | 'due'
+  progress: {},     // { [verbId]: { seen, knew, missed } }
   session: { seen: 0, knew: 0, missed: 0 },
 };
 
@@ -12,6 +14,7 @@ const el = {
   loading: document.getElementById('loading-state'),
   error: document.getElementById('error-state'),
   cardState: document.getElementById('card-state'),
+  emptyFilter: document.getElementById('empty-filter-state'),
   infinitive: document.getElementById('infinitive'),
   answer: document.getElementById('answer'),
   pastSimple: document.getElementById('past-simple'),
@@ -39,6 +42,11 @@ const el = {
   btnNext: document.getElementById('btn-next'),
   btnModeFlashcard: document.getElementById('btn-mode-flashcard'),
   btnModeType: document.getElementById('btn-mode-type'),
+  btnFilterAll: document.getElementById('btn-filter-all'),
+  btnFilterNew: document.getElementById('btn-filter-new'),
+  btnFilterDifficult: document.getElementById('btn-filter-difficult'),
+  btnFilterDue: document.getElementById('btn-filter-due'),
+  btnFilterReset: document.getElementById('btn-filter-reset'),
 };
 
 function show(element) { element.classList.remove('hidden'); }
@@ -85,6 +93,13 @@ function updateStats() {
   el.statMissed.textContent = state.session.missed;
 }
 
+function recordResult(verbId, knew) {
+  if (!state.progress[verbId]) state.progress[verbId] = { seen: 0, knew: 0, missed: 0 };
+  state.progress[verbId].seen += 1;
+  if (knew) state.progress[verbId].knew += 1;
+  else state.progress[verbId].missed += 1;
+}
+
 // Flashcard mode actions
 
 function reveal() {
@@ -95,11 +110,12 @@ function reveal() {
 }
 
 function rate(knew) {
+  recordResult(state.current.id, knew);
   state.session.seen += 1;
   if (knew) state.session.knew += 1;
   else state.session.missed += 1;
   updateStats();
-  showCard(pickRandom(state.verbs));
+  nextCard();
 }
 
 // Type mode actions
@@ -113,6 +129,7 @@ function checkAnswer() {
   hide(el.inputForm);
   showResult(el.inputPS.value, el.inputPP.value, psCorrect, ppCorrect, verb);
 
+  recordResult(verb.id, allCorrect);
   state.session.seen += 1;
   if (allCorrect) state.session.knew += 1;
   else state.session.missed += 1;
@@ -151,7 +168,15 @@ function setResultRow(userEl, correctEl, userValue, correct, expected) {
 }
 
 function nextCard() {
-  showCard(pickRandom(state.verbs));
+  const deck = filteredDeck(state.verbs, state.filter, state.progress);
+  if (!deck.length) {
+    hide(el.cardState);
+    show(el.emptyFilter);
+    return;
+  }
+  hide(el.emptyFilter);
+  show(el.cardState);
+  showCard(pickWeighted(deck, state.progress));
 }
 
 // Mode switching
@@ -165,6 +190,22 @@ function setMode(mode) {
   if (state.current) showCard(state.current);
 }
 
+// Filter switching
+
+function setFilter(filter) {
+  state.filter = filter;
+  [
+    [el.btnFilterAll, 'all'],
+    [el.btnFilterNew, 'new'],
+    [el.btnFilterDifficult, 'difficult'],
+    [el.btnFilterDue, 'due'],
+  ].forEach(([btn, value]) => {
+    btn.classList.toggle('active', filter === value);
+    btn.setAttribute('aria-pressed', String(filter === value));
+  });
+  nextCard();
+}
+
 // Event listeners
 
 el.btnReveal.addEventListener('click', reveal);
@@ -174,6 +215,11 @@ el.btnCheck.addEventListener('click', checkAnswer);
 el.btnNext.addEventListener('click', nextCard);
 el.btnModeFlashcard.addEventListener('click', () => setMode('flashcard'));
 el.btnModeType.addEventListener('click', () => setMode('type'));
+el.btnFilterAll.addEventListener('click', () => setFilter('all'));
+el.btnFilterNew.addEventListener('click', () => setFilter('new'));
+el.btnFilterDifficult.addEventListener('click', () => setFilter('difficult'));
+el.btnFilterDue.addEventListener('click', () => setFilter('due'));
+el.btnFilterReset.addEventListener('click', () => setFilter('all'));
 
 el.inputPP.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.repeat) {
@@ -238,14 +284,14 @@ async function init() {
     if (!state.verbs.length) throw new Error('empty');
     hide(el.loading);
     show(el.cardState);
-    showCard(pickRandom(state.verbs));
+    showCard(pickWeighted(state.verbs, state.progress));
   } catch {
     hide(el.loading);
     show(el.error);
   }
 }
 
-export { init, checkAnswer, showCard, nextCard, setMode, showResult, setResultRow, state, el };
+export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showResult, setResultRow, state, el };
 
 if (typeof process === 'undefined') {
   init();

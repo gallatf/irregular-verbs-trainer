@@ -143,6 +143,19 @@ h1 {
   min-width: 120px;
 }
 
+.btn kbd {
+  font-family: inherit;
+  font-size: 0.75em;
+  font-weight: 400;
+  background: rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 3px;
+  padding: 0.05em 0.35em;
+  margin-left: 0.35em;
+  vertical-align: middle;
+  letter-spacing: 0;
+}
+
 .btn:focus-visible {
   outline: 2px solid #0066cc;
   outline-offset: 2px;
@@ -177,6 +190,187 @@ h1 {
 
 .btn-missed:hover {
   background: #991b1b;
+}
+
+/* Header bottom row (filter + report button) */
+
+.header-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-report {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid #0066cc;
+  border-radius: 8px;
+  background: #fff;
+  color: #0066cc;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.btn-report:hover {
+  background: #0066cc;
+  color: #fff;
+}
+
+.btn-report:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
+
+/* Report panel */
+
+.report-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.stat-tile {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  padding: 0.75rem 1rem;
+  min-width: 5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.stat-tile-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111;
+}
+
+.stat-tile-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #999;
+}
+
+.report-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.report-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.report-controls-label {
+  font-size: 0.75rem;
+  color: #999;
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 1.25rem;
+}
+
+.report-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #999;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.report-table td {
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid #f5f5f5;
+  vertical-align: middle;
+}
+
+.report-table tr:last-child td {
+  border-bottom: none;
+}
+
+.report-verb {
+  font-weight: 600;
+  color: #111;
+}
+
+.report-num {
+  text-align: right;
+  color: #444;
+  font-variant-numeric: tabular-nums;
+}
+
+.report-dots {
+  text-align: right;
+  white-space: nowrap;
+  letter-spacing: 0.1em;
+}
+
+.report-empty {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-size: 0.9375rem;
+}
+
+.status-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.badge-new {
+  background: #f0f0f0;
+  color: #888;
+}
+
+.badge-difficult {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.badge-known {
+  background: #f0faf2;
+  color: #1a5c2a;
+}
+
+.trend-up   { color: #16a34a; font-weight: 700; }
+.trend-down { color: #dc2626; font-weight: 700; }
+.trend-stable { color: #888; }
+
+.attempt-dot { font-size: 0.75rem; }
+.dot-correct { color: #16a34a; }
+.dot-missed  { color: #dc2626; }
+
+.report-actions {
+  display: flex;
+  justify-content: center;
 }
 
 /* Mode toggle */

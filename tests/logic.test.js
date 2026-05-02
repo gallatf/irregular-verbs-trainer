@@ -1,4 +1,4 @@
-import { normalizeInput, matchesExpected, verbStatus, filteredDeck, pickWeighted } from '../app/logic.js';
+import { normalizeInput, matchesExpected, verbStatus, filteredDeck, pickWeighted, recentAccuracy, verbTrend, currentStreak, reportRow, reportSummary } from '../app/logic.js';
 
 describe('normalizeInput', () => {
   it('trims leading whitespace', () => {
@@ -167,5 +167,120 @@ describe('pickWeighted', () => {
       if (pickWeighted([difficult, known], progress).id === 'go') difficultCount++;
     }
     expect(difficultCount).toBeGreaterThan(100);
+  });
+});
+
+describe('recentAccuracy', () => {
+  it('returns null when history is shorter than n', () => {
+    expect(recentAccuracy([true, false], 3)).toBeNull();
+  });
+
+  it('returns 1 when all recent attempts are correct', () => {
+    expect(recentAccuracy([false, true, true, true], 3)).toBe(1);
+  });
+
+  it('returns 0 when all recent attempts are wrong', () => {
+    expect(recentAccuracy([true, false, false, false], 3)).toBe(0);
+  });
+
+  it('returns 2/3 for two correct out of three', () => {
+    expect(recentAccuracy([true, true, false], 3)).toBeCloseTo(2 / 3);
+  });
+});
+
+describe('verbTrend', () => {
+  it('returns null when fewer than 4 attempts', () => {
+    expect(verbTrend([true, false, true])).toBeNull();
+  });
+
+  it('returns "improving" when second half is much better', () => {
+    // first half: [false, false] = 0%, second half: [true, true] = 100%
+    expect(verbTrend([false, false, true, true])).toBe('improving');
+  });
+
+  it('returns "declining" when second half is much worse', () => {
+    expect(verbTrend([true, true, false, false])).toBe('declining');
+  });
+
+  it('returns "stable" when accuracy is similar across halves', () => {
+    expect(verbTrend([true, false, true, false])).toBe('stable');
+  });
+});
+
+describe('currentStreak', () => {
+  it('returns 0 for empty history', () => {
+    expect(currentStreak([])).toBe(0);
+  });
+
+  it('returns 0 when last attempt was wrong', () => {
+    expect(currentStreak([true, true, false])).toBe(0);
+  });
+
+  it('returns 2 for two consecutive correct at the end', () => {
+    expect(currentStreak([false, true, true])).toBe(2);
+  });
+
+  it('returns full length when all correct', () => {
+    expect(currentStreak([true, true, true])).toBe(3);
+  });
+});
+
+describe('reportRow', () => {
+  const verb = { id: 'go', infinitive: 'go', pastSimple: 'went', pastParticiple: 'gone' };
+
+  it('returns zero values for an unseen verb', () => {
+    const row = reportRow(verb, {});
+    expect(row.seen).toBe(0);
+    expect(row.accuracy).toBeNull();
+  });
+
+  it('computes accuracy correctly', () => {
+    const progress = { go: { seen: 4, knew: 3, missed: 1, history: [false, true, true, true] } };
+    const row = reportRow(verb, progress);
+    expect(row.accuracy).toBe(0.75);
+  });
+
+  it('includes trend and streak', () => {
+    const progress = { go: { seen: 4, knew: 2, missed: 2, history: [false, false, true, true] } };
+    const row = reportRow(verb, progress);
+    expect(row.trend).toBe('improving');
+    expect(row.streak).toBe(2);
+  });
+});
+
+describe('reportSummary', () => {
+  const verbs = [
+    { id: 'go' },
+    { id: 'be' },
+    { id: 'run' },
+  ];
+
+  it('counts all as notSeen when progress is empty', () => {
+    const s = reportSummary(verbs, {});
+    expect(s.notSeen).toBe(3);
+    expect(s.practiced).toBe(0);
+    expect(s.accuracy).toBeNull();
+  });
+
+  it('counts mastered and difficult correctly', () => {
+    const progress = {
+      go:  { seen: 3, knew: 1, missed: 2, history: [] }, // difficult
+      be:  { seen: 3, knew: 3, missed: 0, history: [] }, // mastered
+      // run: unseen
+    };
+    const s = reportSummary(verbs, progress);
+    expect(s.practiced).toBe(2);
+    expect(s.mastered).toBe(1);
+    expect(s.difficult).toBe(1);
+    expect(s.notSeen).toBe(1);
+  });
+
+  it('computes overall accuracy across all verbs', () => {
+    const progress = {
+      go: { seen: 2, knew: 1, missed: 1, history: [] },
+      be: { seen: 2, knew: 2, missed: 0, history: [] },
+    };
+    const s = reportSummary(verbs, progress);
+    expect(s.accuracy).toBe(0.75); // 3 knew / 4 total
   });
 });

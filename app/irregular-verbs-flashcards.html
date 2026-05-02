@@ -19,15 +19,64 @@
         <span>Knew: <strong id="stat-knew">0</strong></span>
         <span>Missed: <strong id="stat-missed">0</strong></span>
       </div>
-      <div class="filter-toggle" role="group" aria-label="Verb filter">
-        <button id="btn-filter-due" class="filter-btn active" aria-pressed="true">New + Difficult</button>
-        <button id="btn-filter-new" class="filter-btn" aria-pressed="false">New</button>
-        <button id="btn-filter-difficult" class="filter-btn" aria-pressed="false">Difficult</button>
-        <button id="btn-filter-all" class="filter-btn" aria-pressed="false">All</button>
+      <div class="header-bottom">
+        <div class="filter-toggle" role="group" aria-label="Verb filter">
+          <button id="btn-filter-due" class="filter-btn" aria-pressed="false">New + Difficult</button>
+          <button id="btn-filter-new" class="filter-btn" aria-pressed="false">New</button>
+          <button id="btn-filter-difficult" class="filter-btn" aria-pressed="false">Difficult</button>
+          <button id="btn-filter-all" class="filter-btn active" aria-pressed="true">All</button>
+        </div>
+        <button id="btn-report" class="btn-report">Report</button>
       </div>
     </header>
 
     <main>
+      <div id="report-state" class="state hidden">
+        <div class="report-actions">
+          <button id="btn-report-close-top" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>
+        </div>
+
+        <div id="report-summary" class="report-summary"></div>
+
+        <div class="report-controls">
+          <div class="report-controls-row">
+            <span class="report-controls-label">Filter</span>
+            <div class="filter-toggle" role="group" aria-label="Report filter">
+              <button class="filter-btn active" data-filter="difficult" aria-pressed="true">Difficult</button>
+              <button class="filter-btn" data-filter="practiced" aria-pressed="false">All practiced</button>
+              <button class="filter-btn" data-filter="known" aria-pressed="false">Known</button>
+              <button class="filter-btn" data-filter="all" aria-pressed="false">All</button>
+            </div>
+          </div>
+          <div class="report-controls-row">
+            <span class="report-controls-label">Sort</span>
+            <div class="filter-toggle" role="group" aria-label="Report sort">
+              <button class="filter-btn active" data-sort="accuracy" aria-pressed="true">Accuracy</button>
+              <button class="filter-btn" data-sort="verb" aria-pressed="false">Verb</button>
+              <button class="filter-btn" data-sort="attempts" aria-pressed="false">Attempts</button>
+            </div>
+          </div>
+        </div>
+
+        <table id="report-table" class="report-table">
+          <thead>
+            <tr>
+              <th>Verb</th>
+              <th>Status</th>
+              <th>Seen</th>
+              <th>Accuracy</th>
+              <th>Trend</th>
+              <th>Last 5</th>
+            </tr>
+          </thead>
+          <tbody id="report-body"></tbody>
+        </table>
+
+        <div class="report-actions">
+          <button id="btn-report-close" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>
+        </div>
+      </div>
+
       <div id="empty-filter-state" class="state hidden">
         <p>No verbs match this filter yet.</p>
         <button id="btn-filter-reset" class="btn btn-primary" style="margin-top:1rem">Show all verbs</button>
@@ -86,20 +135,20 @@
         </div>
 
         <div id="reveal-area" class="actions">
-          <button id="btn-reveal" class="btn btn-primary">Reveal</button>
+          <button id="btn-reveal" class="btn btn-primary">Reveal <kbd>↵</kbd></button>
         </div>
 
         <div id="rating-area" class="actions hidden">
-          <button id="btn-knew" class="btn btn-knew">I knew it</button>
-          <button id="btn-missed" class="btn btn-missed">I didn't know it</button>
+          <button id="btn-missed" class="btn btn-missed">← I didn't know it</button>
+          <button id="btn-knew" class="btn btn-knew">I knew it <kbd>↵</kbd></button>
         </div>
 
         <div id="type-submit-area" class="actions hidden">
-          <button id="btn-check" class="btn btn-primary">Check</button>
+          <button id="btn-check" class="btn btn-primary">Check <kbd>↵</kbd></button>
         </div>
 
         <div id="type-next-area" class="actions hidden">
-          <button id="btn-next" class="btn btn-primary">Next</button>
+          <button id="btn-next" class="btn btn-primary">Next <kbd>↵</kbd></button>
         </div>
       </div>
     </main>

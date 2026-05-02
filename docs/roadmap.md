@@ -17,13 +17,21 @@
 - Track difficult verbs
 - Filter deck by status
 
-## Phase 4: Better learning support
+## Phase 4: Progress Report
+- Report button opens a full-screen report panel
+- Summary: verbs practiced, overall accuracy, mastered, difficult, not yet seen
+- Per-verb table: verb, status badge, attempts, accuracy %, trend (↑ ↓ →), attempt-history dots
+- Default view: difficult verbs sorted by accuracy ascending (worst first)
+- Filterable: Difficult / All practiced / Known / All
+- Sortable: Accuracy / Verb / Attempts
+
+## Phase 5: Better learning support
 - Czech translations
 - Example sentences
 - Pronunciation
 - Verb groups and patterns
 
-## Phase 5: Persistence
+## Phase 6: Persistence
 - Save progress
 - Restore previous practice state
 - Export/import progress

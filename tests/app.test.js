@@ -400,6 +400,7 @@ describe('app integration', () => {
       expect(app.state.progress['go'].knew).toBe(1);
       expect(app.state.progress['go'].missed).toBe(0);
       expect(app.state.progress['go'].seen).toBe(1);
+      expect(app.state.progress['go'].history).toEqual([true]);
     });
 
     it('records an incorrect answer in progress', () => {
@@ -407,6 +408,7 @@ describe('app integration', () => {
       app.el.inputPP.value = 'goned';
       app.checkAnswer();
       expect(app.state.progress['go'].missed).toBe(1);
+      expect(app.state.progress['go'].history).toEqual([false]);
       expect(app.state.progress['go'].knew).toBe(0);
     });
 
@@ -503,6 +505,53 @@ describe('app integration', () => {
       app.setFilter('due');
       expect(app.el.btnFilterDue.classList.contains('active')).toBe(true);
       expect(app.el.btnFilterAll.classList.contains('active')).toBe(false);
+    });
+  });
+
+  // ─── report ────────────────────────────────────────────────────────────────
+
+  describe('report', () => {
+    beforeEach(() => {
+      app.state.verbs = [...verbsFixture];
+      app.state.filter = 'all';
+      app.showCard(goVerb);
+    });
+
+    it('showReport hides card state and shows report state', () => {
+      app.showReport();
+      expect(app.el.reportState.classList.contains('hidden')).toBe(false);
+      expect(app.el.cardState.classList.contains('hidden')).toBe(true);
+    });
+
+    it('hideReport hides report state and restores card state', () => {
+      app.showReport();
+      app.hideReport();
+      expect(app.el.reportState.classList.contains('hidden')).toBe(true);
+      expect(app.el.cardState.classList.contains('hidden')).toBe(false);
+    });
+
+    it('summary tiles are rendered by showReport', () => {
+      app.showReport();
+      expect(app.el.reportSummaryEl.innerHTML).not.toBe('');
+    });
+
+    it('report table shows "no verbs" row when filter yields empty set (no difficult verbs yet)', () => {
+      app.state.report.filter = 'difficult';
+      app.showReport();
+      expect(app.el.reportBody.innerHTML).toContain('No verbs match');
+    });
+
+    it('report table shows rows when difficult verbs exist', () => {
+      app.state.progress['go'] = { seen: 3, knew: 0, missed: 3, history: [false, false, false] };
+      app.state.report.filter = 'difficult';
+      app.showReport();
+      expect(app.el.reportBody.querySelector('td.report-verb').textContent).toBe('go');
+    });
+
+    it('flashcard mode records history in progress via rate()', () => {
+      app.el.btnReveal.click(); // reveal
+      app.el.btnKnew.click();  // rate as knew
+      expect(app.state.progress['go'].history).toEqual([true]);
     });
   });
 });

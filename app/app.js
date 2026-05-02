@@ -1,12 +1,13 @@
-import { normalizeInput, matchesExpected, pickWeighted, filteredDeck } from './logic.js';
+import { normalizeInput, matchesExpected, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary } from './logic.js';
 
 const state = {
   verbs: [],
   current: null,
   mode: 'flashcard', // 'flashcard' | 'type'
-  filter: 'due',    // 'all' | 'new' | 'difficult' | 'due'
-  progress: {},     // { [verbId]: { seen, knew, missed } }
+  filter: 'all',    // 'all' | 'new' | 'difficult' | 'due'
+  progress: {},     // { [verbId]: { seen, knew, missed, history: boolean[] } }
   session: { seen: 0, knew: 0, missed: 0 },
+  report: { filter: 'difficult', sort: 'accuracy' },
 };
 
 const el = {
@@ -47,6 +48,14 @@ const el = {
   btnFilterDifficult: document.getElementById('btn-filter-difficult'),
   btnFilterDue: document.getElementById('btn-filter-due'),
   btnFilterReset: document.getElementById('btn-filter-reset'),
+  btnReport: document.getElementById('btn-report'),
+  reportState: document.getElementById('report-state'),
+  btnReportClose: document.getElementById('btn-report-close'),
+  btnReportCloseTop: document.getElementById('btn-report-close-top'),
+  reportSummaryEl: document.getElementById('report-summary'),
+  reportBody: document.getElementById('report-body'),
+  reportFilterBtns: null, // set after DOM ready
+  reportSortBtns: null,
 };
 
 function show(element) { element.classList.remove('hidden'); }
@@ -94,10 +103,11 @@ function updateStats() {
 }
 
 function recordResult(verbId, knew) {
-  if (!state.progress[verbId]) state.progress[verbId] = { seen: 0, knew: 0, missed: 0 };
+  if (!state.progress[verbId]) state.progress[verbId] = { seen: 0, knew: 0, missed: 0, history: [] };
   state.progress[verbId].seen += 1;
   if (knew) state.progress[verbId].knew += 1;
   else state.progress[verbId].missed += 1;
+  state.progress[verbId].history.push(knew);
 }
 
 // Flashcard mode actions
@@ -206,6 +216,110 @@ function setFilter(filter) {
   nextCard();
 }
 
+// Report
+
+function renderReportSummary() {
+  const s = reportSummary(state.verbs, state.progress);
+  const pct = s.accuracy === null ? '—' : Math.round(s.accuracy * 100) + '%';
+  el.reportSummaryEl.innerHTML =
+    tile('Practiced', s.practiced) +
+    tile('Accuracy', pct) +
+    tile('Mastered', s.mastered) +
+    tile('Difficult', s.difficult) +
+    tile('Not seen', s.notSeen);
+}
+
+function tile(label, value) {
+  return `<div class="stat-tile"><span class="stat-tile-value">${value}</span><span class="stat-tile-label">${label}</span></div>`;
+}
+
+function renderReportTable() {
+  const { filter, sort } = state.report;
+  let rows = state.verbs.map(v => reportRow(v, state.progress));
+
+  if (filter === 'difficult') rows = rows.filter(r => r.missed > r.knew);
+  else if (filter === 'practiced') rows = rows.filter(r => r.seen > 0);
+  else if (filter === 'known') rows = rows.filter(r => r.seen > 0 && r.knew >= r.missed);
+
+  if (sort === 'accuracy') rows.sort((a, b) => (a.accuracy ?? -1) - (b.accuracy ?? -1));
+  else if (sort === 'verb') rows.sort((a, b) => a.verb.infinitive.localeCompare(b.verb.infinitive));
+  else if (sort === 'attempts') rows.sort((a, b) => b.seen - a.seen);
+
+  if (!rows.length) {
+    el.reportBody.innerHTML = `<tr><td colspan="6" class="report-empty">No verbs match this filter yet.</td></tr>`;
+    return;
+  }
+
+  el.reportBody.innerHTML = rows.map(r => {
+    const status = verbStatus(r.verb.id, state.progress);
+    const pct = r.accuracy === null ? '—' : Math.round(r.accuracy * 100) + '%';
+    const trendChar = { improving: '↑', declining: '↓', stable: '→', null: '—' }[r.trend] ?? '—';
+    const trendClass = { improving: 'trend-up', declining: 'trend-down', stable: 'trend-stable' }[r.trend] ?? '';
+    const dots = r.history.slice(-5).map(c => `<span class="attempt-dot ${c ? 'dot-correct' : 'dot-missed'}">${c ? '●' : '○'}</span>`).join('');
+    return `<tr>
+      <td class="report-verb">${r.verb.infinitive}</td>
+      <td><span class="status-badge badge-${status}">${status}</span></td>
+      <td class="report-num">${r.seen}</td>
+      <td class="report-num">${pct}</td>
+      <td class="report-num ${trendClass}">${trendChar}</td>
+      <td class="report-dots">${dots}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setReportFilter(filter) {
+  state.report.filter = filter;
+  el.reportFilterBtns.forEach(btn => {
+    const active = btn.dataset.filter === filter;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  renderReportTable();
+}
+
+function setReportSort(sort) {
+  state.report.sort = sort;
+  el.reportSortBtns.forEach(btn => {
+    const active = btn.dataset.sort === sort;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  renderReportTable();
+}
+
+function showReport() {
+  el.btnReport.textContent = 'Practice';
+  renderReportSummary();
+  // Reset filter/sort buttons to current state
+  el.reportFilterBtns.forEach(btn => {
+    const active = btn.dataset.filter === state.report.filter;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  el.reportSortBtns.forEach(btn => {
+    const active = btn.dataset.sort === state.report.sort;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  });
+  renderReportTable();
+  hide(el.cardState);
+  hide(el.emptyFilter);
+  show(el.reportState);
+  el.btnReportCloseTop.focus();
+}
+
+function hideReport() {
+  el.btnReport.textContent = 'Report';
+  hide(el.reportState);
+  // Restore whichever practice state was active
+  const deck = filteredDeck(state.verbs, state.filter, state.progress);
+  if (!deck.length) {
+    show(el.emptyFilter);
+  } else {
+    show(el.cardState);
+  }
+}
+
 // Event listeners
 
 el.btnReveal.addEventListener('click', reveal);
@@ -220,6 +334,19 @@ el.btnFilterNew.addEventListener('click', () => setFilter('new'));
 el.btnFilterDifficult.addEventListener('click', () => setFilter('difficult'));
 el.btnFilterDue.addEventListener('click', () => setFilter('due'));
 el.btnFilterReset.addEventListener('click', () => setFilter('all'));
+el.btnReport.addEventListener('click', () => {
+  if (el.reportState.classList.contains('hidden')) showReport();
+  else hideReport();
+});
+el.btnReportClose.addEventListener('click', hideReport);
+el.btnReportCloseTop.addEventListener('click', hideReport);
+
+// Report filter/sort buttons are queried after DOM is ready
+el.reportFilterBtns = document.querySelectorAll('[data-filter]');
+el.reportSortBtns = document.querySelectorAll('[data-sort]');
+
+el.reportFilterBtns.forEach(btn => btn.addEventListener('click', () => setReportFilter(btn.dataset.filter)));
+el.reportSortBtns.forEach(btn => btn.addEventListener('click', () => setReportSort(btn.dataset.sort)));
 
 el.inputPP.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.repeat) {
@@ -259,9 +386,7 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         reveal();
       }
-    } else if (e.key === 'ArrowRight' || e.key === 'k') {
-      if (!el.ratingArea.classList.contains('hidden')) rate(true);
-    } else if (e.key === 'ArrowLeft' || e.key === 'm') {
+    } else if (e.key === 'ArrowLeft') {
       if (!el.ratingArea.classList.contains('hidden')) rate(false);
     }
   } else {
@@ -291,7 +416,7 @@ async function init() {
   }
 }
 
-export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showResult, setResultRow, state, el };
+export { init, checkAnswer, showCard, nextCard, setMode, setFilter, showReport, hideReport, showResult, setResultRow, state, el };
 
 if (typeof process === 'undefined') {
   init();

@@ -302,8 +302,26 @@ function requeueCurrentVerb() {
   state.sessionQueue.splice(insertAt, 0, state.current);
 }
 
+// When the only remaining queue item is the verb just answered, pull a filler
+// from the next broader group so the verb is never shown back-to-back.
+function pickFillerVerb() {
+  const currentId = state.current?.id;
+  const fallbacks = state.filter === 'due'      ? ['difficult', 'all'] :
+                    state.filter === 'difficult' ? ['all'] : [];
+  for (const f of fallbacks) {
+    const pool = filteredDeck(state.verbs, f, state.progress).filter(v => v.id !== currentId);
+    if (pool.length) return pickWeighted(pool, state.progress, currentId);
+  }
+  const pool = state.verbs.filter(v => v.id !== currentId);
+  return pool.length ? pickWeighted(pool, state.progress, currentId) : null;
+}
+
 function nextCard() {
   if (state.sessionQueue.length > 0) {
+    if (state.sessionQueue.length === 1 && state.sessionQueue[0].id === state.current?.id) {
+      const filler = pickFillerVerb();
+      if (filler) state.sessionQueue.unshift(filler);
+    }
     hide(el.emptyFilter);
     show(el.cardState);
     showCard(state.sessionQueue.shift());

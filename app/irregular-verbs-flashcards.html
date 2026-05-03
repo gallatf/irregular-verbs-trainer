@@ -19,6 +19,30 @@
         <span>Knew: <strong id="stat-knew">0</strong></span>
         <span>Missed: <strong id="stat-missed">0</strong></span>
       </div>
+      <div id="auth-bar" class="auth-bar hidden">
+        <span id="sync-status" class="sync-status"></span>
+        <div id="auth-signed-out" class="hidden">
+          <button id="btn-reset-local-anon" class="btn-report">Reset</button>
+          <button id="btn-login" class="btn-report">Log in</button>
+        </div>
+        <div id="auth-signed-in" class="hidden">
+          <div class="auth-menu-wrapper">
+            <button id="btn-auth-menu" class="btn-report auth-menu-trigger" aria-haspopup="true" aria-expanded="false">
+              <span id="auth-email-display" class="auth-email-display"></span>
+              <span class="auth-menu-caret" aria-hidden="true">▾</span>
+            </button>
+            <div id="auth-menu" class="auth-menu hidden" role="menu">
+              <button id="btn-reset-local" class="auth-menu-item" role="menuitem">Reset local progress</button>
+              <button id="btn-reset-server" class="auth-menu-item" role="menuitem">Reset everywhere</button>
+              <div class="auth-menu-divider"></div>
+              <button id="btn-delete-account" class="auth-menu-item auth-menu-item--danger" role="menuitem">Delete account</button>
+              <div class="auth-menu-divider"></div>
+              <button id="btn-logout" class="auth-menu-item" role="menuitem">Log out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="header-bottom">
         <div class="filter-toggle" role="group" aria-label="Verb filter">
           <button id="btn-filter-due" class="filter-btn" aria-pressed="false">New + Difficult</button>
@@ -32,6 +56,36 @@
     </header>
 
     <main>
+      <div id="auth-state" class="state hidden">
+
+        <div id="auth-form-view">
+          <h2 id="auth-heading" class="auth-heading">Sign in</h2>
+          <p id="auth-subheading" class="auth-subheading">Welcome back.</p>
+          <form id="auth-form" class="auth-form" novalidate>
+            <div class="auth-field">
+              <label for="auth-email">Email</label>
+              <input id="auth-email" type="email" autocomplete="email" placeholder="you@example.com">
+            </div>
+            <div class="auth-field">
+              <label for="auth-password">Password</label>
+              <input id="auth-password" type="password" autocomplete="current-password" placeholder="password">
+            </div>
+            <div id="auth-error" class="auth-error hidden"></div>
+            <button id="btn-auth-submit" type="submit" class="btn btn-primary auth-submit">Sign in</button>
+          </form>
+          <button id="btn-auth-toggle" class="btn-auth-toggle">No account yet? Sign up</button>
+        </div>
+
+        <div id="auth-success" class="auth-success hidden">
+          <div class="auth-success-icon">✉</div>
+          <h3 class="auth-success-title">Check your email</h3>
+          <p class="auth-success-body">We sent a confirmation link to <strong id="auth-success-email"></strong>. Click the link in that email to activate your account, then come back here and sign in.</p>
+          <button id="btn-auth-back-to-signin" class="btn btn-primary auth-submit">Go to sign in</button>
+        </div>
+
+        <button id="btn-auth-cancel" class="btn-auth-cancel">Cancel</button>
+      </div>
+
       <div id="help-state" class="state hidden">
         <div class="help-close-row">
           <button id="btn-help-close" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>
@@ -74,7 +128,26 @@
 
           <section class="help-section">
             <h2 class="help-heading">Progress &amp; persistence</h2>
-            <p class="help-p">Your progress is saved automatically in your browser after every card and restored when you reopen the page. Open the <strong>Report</strong> to see your stats and to export or import a JSON backup of your progress.</p>
+            <p class="help-p">Progress is saved automatically in your browser after every card. It is always available offline — no account needed.</p>
+            <p class="help-p" style="margin-top:0.625rem">To sync across devices, use the <strong>Log in</strong> button at the top of the page. After signing in, progress is also saved to the server after every card and restored automatically when you open the app on any device.</p>
+          </section>
+
+          <section class="help-section">
+            <h2 class="help-heading">Account &amp; sync</h2>
+            <dl class="help-dl">
+              <dt>Creating an account</dt>
+              <dd id="help-signup-desc">Click <strong>Log in</strong>, then switch to <strong>Sign up</strong> using the toggle at the bottom of the form. Enter your email and a password, then submit. You'll receive a confirmation email — click the link in it to activate your account. Once confirmed, come back and sign in with your email and password.</dd>
+              <dt>Log in</dt>
+              <dd id="help-login-desc">Sign in with your confirmed email and password to enable server sync.</dd>
+              <dt>Log out</dt>
+              <dd>Ends your session on this device. Local progress is kept and will merge with server data when you sign in again.</dd>
+              <dt>Reset local progress</dt>
+              <dd>Clears your progress in this browser only. Server data is untouched and will reload on next login.</dd>
+              <dt>Reset everywhere</dt>
+              <dd>Clears progress in this browser and on the server. Only available when signed in.</dd>
+              <dt>Delete account</dt>
+              <dd>Permanently removes your server data and account. Cannot be undone. Only available when signed in.</dd>
+            </dl>
           </section>
 
           <section class="help-section">
@@ -142,6 +215,7 @@
           <label class="btn-io" for="input-import">Import progress</label>
           <input id="input-import" type="file" accept=".json" class="visually-hidden">
         </div>
+
 
         <div class="report-actions">
           <button id="btn-report-close" class="btn btn-primary">Back to practice <kbd>↵</kbd></button>

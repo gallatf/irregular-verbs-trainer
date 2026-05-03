@@ -1,5 +1,8 @@
 import { normalizeInput, matchesExpected, isNearMiss, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary } from './logic.js';
 
+let supabase = null;
+let emailConfirmationRequired = true; // updated from supabase_config.js at init
+
 const state = {
   verbs: [],
   current: null,
@@ -9,6 +12,7 @@ const state = {
   progress: {},     // { [verbId]: { seen, knew, missed, history: boolean[] } }
   session: { seen: 0, knew: 0, missed: 0 },
   report: { filter: 'all', sort: 'accuracy' },
+  auth: { user: null, formMode: 'signin' }, // formMode: 'signin' | 'signup'
 };
 
 const el = {
@@ -64,6 +68,34 @@ const el = {
   inputImport: document.getElementById('input-import'),
   reportFilterBtns: null, // set after DOM ready
   reportSortBtns: null,
+  // Auth
+  authBar: document.getElementById('auth-bar'),
+  authSignedOut: document.getElementById('auth-signed-out'),
+  authSignedIn: document.getElementById('auth-signed-in'),
+  btnResetLocalAnon: document.getElementById('btn-reset-local-anon'),
+  btnLogin: document.getElementById('btn-login'),
+  btnAuthMenu: document.getElementById('btn-auth-menu'),
+  authMenu: document.getElementById('auth-menu'),
+  btnResetLocal: document.getElementById('btn-reset-local'),
+  btnResetServer: document.getElementById('btn-reset-server'),
+  btnDeleteAccount: document.getElementById('btn-delete-account'),
+  btnLogout: document.getElementById('btn-logout'),
+  authEmailDisplay: document.getElementById('auth-email-display'),
+  syncStatus: document.getElementById('sync-status'),
+  authState: document.getElementById('auth-state'),
+  authFormView: document.getElementById('auth-form-view'),
+  authHeading: document.getElementById('auth-heading'),
+  authSubheading: document.getElementById('auth-subheading'),
+  authForm: document.getElementById('auth-form'),
+  authEmail: document.getElementById('auth-email'),
+  authPassword: document.getElementById('auth-password'),
+  authError: document.getElementById('auth-error'),
+  btnAuthSubmit: document.getElementById('btn-auth-submit'),
+  btnAuthToggle: document.getElementById('btn-auth-toggle'),
+  authSuccess: document.getElementById('auth-success'),
+  authSuccessEmail: document.getElementById('auth-success-email'),
+  btnAuthBackToSignin: document.getElementById('btn-auth-back-to-signin'),
+  btnAuthCancel: document.getElementById('btn-auth-cancel'),
 };
 
 function show(element) { element.classList.remove('hidden'); }
@@ -262,13 +294,13 @@ function setFilter(filter) {
 const STORAGE_KEY = 'ivt-progress';
 
 function saveProgress() {
+  const payload = { progress: state.progress, mode: state.mode, filter: state.filter };
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      progress: state.progress,
-      mode: state.mode,
-      filter: state.filter,
-    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch { /* quota exceeded or private mode — ignore */ }
+  if (supabase && state.auth.user) {
+    syncToServer(payload);
+  }
 }
 
 function loadProgress() {
@@ -309,6 +341,289 @@ function importProgress(file) {
     } catch { /* invalid file — ignore */ }
   };
   reader.readAsText(file);
+}
+
+// Supabase sync
+
+async function initSupabase() {
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    const config = await import('./supabase_config.js');
+    if (!config.SUPABASE_URL || !config.SUPABASE_ANON_KEY) return;
+    supabase = createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY);
+    emailConfirmationRequired = config.EMAIL_CONFIRMATION_REQUIRED ?? true;
+    applyEmailConfirmationConfig();
+
+    supabase.auth.onAuthStateChange((event, session) => {
+      state.auth.user = session?.user ?? null;
+      updateAuthUI();
+    });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    state.auth.user = session?.user ?? null;
+  } catch {
+    // config missing or network unavailable — run without server sync
+  }
+}
+
+let syncTimer = null;
+
+function setSyncStatus(status) {
+  clearTimeout(syncTimer);
+  if (status === 'saving') {
+    el.syncStatus.textContent = 'Saving…';
+    el.syncStatus.className = 'sync-status sync-saving';
+  } else if (status === 'saved') {
+    el.syncStatus.textContent = 'Saved';
+    el.syncStatus.className = 'sync-status sync-saved';
+    syncTimer = setTimeout(() => { el.syncStatus.textContent = ''; el.syncStatus.className = 'sync-status'; }, 2000);
+  } else if (status === 'loaded') {
+    el.syncStatus.textContent = 'Progress loaded from server';
+    el.syncStatus.className = 'sync-status sync-saved';
+    syncTimer = setTimeout(() => { el.syncStatus.textContent = ''; el.syncStatus.className = 'sync-status'; }, 4000);
+  } else if (status === 'offline') {
+    el.syncStatus.textContent = 'Offline';
+    el.syncStatus.className = 'sync-status sync-offline';
+  } else {
+    el.syncStatus.textContent = '';
+    el.syncStatus.className = 'sync-status';
+  }
+}
+
+async function syncToServer(payload) {
+  setSyncStatus('saving');
+  try {
+    const { error } = await supabase.from('user_progress').upsert(
+      { user_id: state.auth.user.id, data: payload },
+      { onConflict: 'user_id' },
+    );
+    if (error) throw error;
+    setSyncStatus('saved');
+  } catch {
+    setSyncStatus('offline');
+  }
+}
+
+async function loadFromServer() {
+  if (!supabase || !state.auth.user) return;
+  try {
+    const { data, error } = await supabase
+      .from('user_progress')
+      .select('data')
+      .eq('user_id', state.auth.user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (data?.data) {
+      const saved = data.data;
+      if (saved.progress) state.progress = saved.progress;
+      if (saved.mode) state.mode = saved.mode;
+      if (saved.filter) state.filter = saved.filter;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch {}
+      setSyncStatus('loaded');
+    }
+  } catch {
+    // network error — keep whatever was loaded from localStorage
+  }
+}
+
+async function mergeAndSyncOnLogin() {
+  // Read local data before overwriting
+  const localProgress = { ...state.progress };
+  await loadFromServer();
+  // Add any local verbs the server didn't have
+  Object.keys(localProgress).forEach(id => {
+    if (!state.progress[id]) state.progress[id] = localProgress[id];
+  });
+  saveProgress();
+}
+
+function saveLocalOnly() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      progress: state.progress, mode: state.mode, filter: state.filter,
+    }));
+  } catch {}
+}
+
+function resetProgressLocal() {
+  closeAuthMenu();
+  if (!confirm('Reset all local progress? This cannot be undone.\n\nNote: if you are signed in, server progress is kept and will reload on next login.')) return;
+  state.progress = {};
+  saveLocalOnly();
+  renderReportSummary();
+  renderReportTable();
+}
+
+async function resetProgressEverywhere() {
+  closeAuthMenu();
+  if (!confirm('Reset all progress on this device and on the server? This cannot be undone.')) return;
+  state.progress = {};
+  saveProgress();
+  renderReportSummary();
+  renderReportTable();
+}
+
+async function deleteAccount() {
+  closeAuthMenu();
+  if (!confirm('Delete your account and all server data permanently? This cannot be undone.')) return;
+  try {
+    await supabase.from('user_progress').delete().eq('user_id', state.auth.user.id);
+    await supabase.rpc('delete_own_account');
+    await supabase.auth.signOut({ scope: 'local' });
+    state.progress = {};
+    saveLocalOnly();
+    state.auth.user = null;
+    updateAuthUI();
+    hideReport();
+  } catch (e) {
+    alert('Could not delete account: ' + (e.message ?? 'unknown error'));
+  }
+}
+
+// Auth UI
+
+function updateAuthUI() {
+  if (state.auth.user) {
+    hide(el.authSignedOut);
+    show(el.authSignedIn);
+    el.authEmailDisplay.textContent = state.auth.user.email;
+  } else {
+    show(el.authSignedOut);
+    hide(el.authSignedIn);
+    setSyncStatus('');
+  }
+}
+
+function openAuthMenu() {
+  show(el.authMenu);
+  el.btnAuthMenu.setAttribute('aria-expanded', 'true');
+}
+
+function closeAuthMenu() {
+  hide(el.authMenu);
+  el.btnAuthMenu.setAttribute('aria-expanded', 'false');
+}
+
+function toggleAuthMenu() {
+  el.authMenu.classList.contains('hidden') ? openAuthMenu() : closeAuthMenu();
+}
+
+function showAuth() {
+  el.btnReport.textContent = 'Report';
+  hide(el.cardState);
+  hide(el.emptyFilter);
+  hide(el.reportState);
+  hide(el.helpState);
+  show(el.authState);
+  resetAuthForm();
+  el.authEmail.focus();
+}
+
+function hideAuth() {
+  hide(el.authState);
+  const deck = filteredDeck(state.verbs, state.filter, state.progress);
+  if (!deck.length) show(el.emptyFilter);
+  else show(el.cardState);
+}
+
+function resetAuthForm() {
+  el.authForm.reset();
+  hide(el.authSuccess);
+  show(el.authFormView);
+  el.btnAuthSubmit.disabled = false;
+  setAuthFormMode('signin');
+}
+
+function setAuthFormMode(mode) {
+  state.auth.formMode = mode;
+  if (mode === 'signin') {
+    el.authHeading.textContent = 'Sign in';
+    el.authSubheading.textContent = 'Welcome back.';
+    el.btnAuthSubmit.textContent = 'Sign in';
+    el.btnAuthToggle.textContent = 'No account yet? Sign up';
+    el.authPassword.setAttribute('autocomplete', 'current-password');
+  } else {
+    el.authHeading.textContent = 'Create an account';
+    el.authSubheading.textContent = 'Sync your progress across devices.';
+    el.btnAuthSubmit.textContent = 'Sign up';
+    el.btnAuthToggle.textContent = 'Already have an account? Sign in';
+    el.authPassword.setAttribute('autocomplete', 'new-password');
+  }
+  hide(el.authError);
+}
+
+function showAuthError(message) {
+  el.authError.textContent = message;
+  show(el.authError);
+}
+
+function applyEmailConfirmationConfig() {
+  const signupDesc = document.getElementById('help-signup-desc');
+  const loginDesc  = document.getElementById('help-login-desc');
+  if (!signupDesc || !loginDesc) return;
+  if (emailConfirmationRequired) {
+    signupDesc.innerHTML = 'Click <strong>Log in</strong>, then switch to <strong>Sign up</strong> using the toggle at the bottom of the form. Enter your email and a password, then submit. You\'ll receive a confirmation email — click the link in it to activate your account. Once confirmed, come back and sign in with your email and password.';
+    loginDesc.textContent = 'Sign in with your confirmed email and password to enable server sync.';
+  } else {
+    signupDesc.innerHTML = 'Click <strong>Log in</strong>, then switch to <strong>Sign up</strong> using the toggle at the bottom of the form. Enter your email and a password and submit — you\'ll be signed in immediately.';
+    loginDesc.textContent = 'Sign in with your email and password to enable server sync.';
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = el.authEmail.value.trim();
+  const password = el.authPassword.value;
+  if (!email || !password) return;
+
+  el.btnAuthSubmit.disabled = true;
+  hide(el.authError);
+
+  const fn = state.auth.formMode === 'signin'
+    ? supabase.auth.signInWithPassword({ email, password })
+    : supabase.auth.signUp({ email, password, options: {
+        emailRedirectTo: window.location.origin + window.location.pathname,
+      } });
+
+  const { data, error } = await fn;
+
+  if (error) {
+    showAuthError(error.message);
+    el.btnAuthSubmit.disabled = false;
+    return;
+  }
+
+  if (state.auth.formMode === 'signup') {
+    if (data.session) {
+      // Email confirmation is disabled — user is already signed in.
+      await mergeAndSyncOnLogin();
+      updateAuthUI();
+      setMode(state.mode);
+      applyFilterButtons(state.filter);
+      hideAuth();
+    } else {
+      // Confirmation email sent — show the check-your-email screen.
+      el.authSuccessEmail.textContent = email;
+      hide(el.authFormView);
+      show(el.authSuccess);
+      el.btnAuthSubmit.disabled = false;
+    }
+    return;
+  }
+
+  // Signed in — merge local + server progress
+  await mergeAndSyncOnLogin();
+  updateAuthUI();
+  setMode(state.mode);
+  applyFilterButtons(state.filter);
+  hideAuth();
+}
+
+async function handleSignOut() {
+  closeAuthMenu();
+  if (!supabase) return;
+  await supabase.auth.signOut();
+  updateAuthUI();
 }
 
 // Report
@@ -388,6 +703,7 @@ function showHelp() {
   hide(el.cardState);
   hide(el.emptyFilter);
   hide(el.reportState);
+  hide(el.authState);
   show(el.helpState);
   el.btnHelpClose.focus();
 }
@@ -416,6 +732,7 @@ function showReport() {
   renderReportTable();
   hide(el.cardState);
   hide(el.emptyFilter);
+  hide(el.authState);
   show(el.reportState);
   el.btnReportCloseTop.focus();
 }
@@ -456,10 +773,30 @@ el.btnHelpCloseBottom.addEventListener('click', hideHelp);
 el.btnReportClose.addEventListener('click', hideReport);
 el.btnReportCloseTop.addEventListener('click', hideReport);
 el.btnExport.addEventListener('click', exportProgress);
+el.btnResetLocal.addEventListener('click', resetProgressLocal);
+el.btnResetServer.addEventListener('click', resetProgressEverywhere);
+el.btnDeleteAccount.addEventListener('click', deleteAccount);
 el.inputImport.addEventListener('change', (e) => {
   if (e.target.files[0]) importProgress(e.target.files[0]);
   e.target.value = ''; // reset so the same file can be re-imported
 });
+
+// Auth listeners
+el.btnResetLocalAnon.addEventListener('click', resetProgressLocal);
+el.btnLogin.addEventListener('click', showAuth);
+el.btnAuthMenu.addEventListener('click', (e) => { e.stopPropagation(); toggleAuthMenu(); });
+el.btnLogout.addEventListener('click', handleSignOut);
+el.btnAuthCancel.addEventListener('click', hideAuth);
+el.btnAuthToggle.addEventListener('click', () => {
+  setAuthFormMode(state.auth.formMode === 'signin' ? 'signup' : 'signin');
+});
+el.btnAuthBackToSignin.addEventListener('click', () => {
+  hide(el.authSuccess);
+  show(el.authFormView);
+  setAuthFormMode('signin');
+  el.authEmail.focus();
+});
+el.authForm.addEventListener('submit', handleAuthSubmit);
 
 // Report filter/sort buttons are queried after DOM is ready
 el.reportFilterBtns = document.querySelectorAll('[data-filter]');
@@ -499,8 +836,16 @@ el.btnNext.addEventListener('keydown', (e) => {
   }
 });
 
+document.addEventListener('click', (e) => {
+  if (!el.authMenu.classList.contains('hidden') && !el.authSignedIn.contains(e.target)) {
+    closeAuthMenu();
+  }
+});
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    if (!el.authMenu.classList.contains('hidden')) { closeAuthMenu(); return; }
+    if (!el.authState.classList.contains('hidden')) { hideAuth(); return; }
     if (!el.helpState.classList.contains('hidden')) { hideHelp(); return; }
     if (!el.reportState.classList.contains('hidden')) { hideReport(); return; }
   }
@@ -527,11 +872,17 @@ document.addEventListener('keydown', (e) => {
 
 async function init() {
   try {
+    await initSupabase();
     const res = await fetch('../data/irregular-verbs.json');
     if (!res.ok) throw new Error('fetch failed');
     state.verbs = await res.json();
     if (!state.verbs.length) throw new Error('empty');
     loadProgress();
+    if (state.auth.user) {
+      await loadFromServer();
+    }
+    updateAuthUI();
+    if (supabase) show(el.authBar);
     setMode(state.mode);           // safe: state.current is null, won't call showCard
     applyFilterButtons(state.filter);
     hide(el.loading);

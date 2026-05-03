@@ -976,7 +976,16 @@ h1 {
 }
 
 
-.auth-submit { width: 100%; }
+.auth-submit { width: 100%; margin-bottom: 0.5rem; }
+
+.auth-privacy-notice {
+  font-size: 0.8125rem;
+  color: #888;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.auth-privacy-notice a { color: #0066cc; }
 
 .btn-auth-toggle {
   display: block;
@@ -1032,6 +1041,21 @@ h1 {
   margin-bottom: 1.25rem;
   line-height: 1.5;
 }
+
+/* Footer */
+
+.app-footer {
+  text-align: center;
+  padding: 0.5rem 0 0.25rem;
+}
+
+.app-footer a {
+  font-size: 0.8125rem;
+  color: #aaa;
+  text-decoration: none;
+}
+
+.app-footer a:hover { color: #666; text-decoration: underline; }
 
 /* Loading / error states */
 

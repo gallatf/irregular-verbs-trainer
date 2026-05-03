@@ -92,6 +92,7 @@ const el = {
   authError: document.getElementById('auth-error'),
   btnAuthSubmit: document.getElementById('btn-auth-submit'),
   btnAuthToggle: document.getElementById('btn-auth-toggle'),
+  authPrivacyNotice: document.getElementById('auth-privacy-notice'),
   authSuccess: document.getElementById('auth-success'),
   authSuccessEmail: document.getElementById('auth-success-email'),
   btnAuthBackToSignin: document.getElementById('btn-auth-back-to-signin'),
@@ -315,9 +316,20 @@ function loadProgress() {
 }
 
 function exportProgress() {
-  const blob = new Blob([JSON.stringify({
-    progress: state.progress, mode: state.mode, filter: state.filter,
-  }, null, 2)], { type: 'application/json' });
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    progress: state.progress,
+    mode: state.mode,
+    filter: state.filter,
+  };
+  if (state.auth.user) {
+    payload.account = {
+      email: state.auth.user.email,
+      createdAt: state.auth.user.created_at,
+      lastSignInAt: state.auth.user.last_sign_in_at,
+    };
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -465,7 +477,7 @@ async function resetProgressEverywhere() {
 
 async function deleteAccount() {
   closeAuthMenu();
-  if (!confirm('Delete your account and all server data permanently? This cannot be undone.')) return;
+  if (!confirm('Delete your account and all server data permanently?\n\nYour account and progress will be removed from the live database immediately. Supabase may retain encrypted backups for up to 7 days — these cannot be used to restore your account.\n\nThis cannot be undone.')) return;
   try {
     await supabase.from('user_progress').delete().eq('user_id', state.auth.user.id);
     await supabase.rpc('delete_own_account');
@@ -542,12 +554,14 @@ function setAuthFormMode(mode) {
     el.btnAuthSubmit.textContent = 'Sign in';
     el.btnAuthToggle.textContent = 'No account yet? Sign up';
     el.authPassword.setAttribute('autocomplete', 'current-password');
+    hide(el.authPrivacyNotice);
   } else {
     el.authHeading.textContent = 'Create an account';
     el.authSubheading.textContent = 'Sync your progress across devices.';
     el.btnAuthSubmit.textContent = 'Sign up';
     el.btnAuthToggle.textContent = 'Already have an account? Sign in';
     el.authPassword.setAttribute('autocomplete', 'new-password');
+    show(el.authPrivacyNotice);
   }
   hide(el.authError);
 }

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — Irregular Verbs Trainer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      line-height: 1.65;
+      padding: 2rem 1rem 4rem;
+    }
+    .wrap { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .meta { font-size: 0.875rem; color: #888; margin-bottom: 2.5rem; }
+    h2 { font-size: 1rem; font-weight: 600; margin: 2rem 0 0.5rem; color: #111; }
+    p { margin-bottom: 0.75rem; font-size: 0.9375rem; }
+    ul { margin: 0.25rem 0 0.75rem 1.25rem; font-size: 0.9375rem; }
+    li { margin-bottom: 0.25rem; }
+    a { color: #0066cc; }
+    .back { display: inline-block; font-size: 0.875rem; color: #0066cc; margin-bottom: 2rem; text-decoration: none; }
+    .back:hover { text-decoration: underline; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.875rem; margin-bottom: 0.75rem; }
+    th, td { text-align: left; padding: 0.4rem 0.6rem; border: 1px solid #ddd; }
+    th { background: #f0f0f0; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="irregular-verbs-flashcards.html">← Back to app</a>
+
+    <h1>Privacy Policy</h1>
+    <p class="meta">Last updated: 3 May 2026</p>
+
+    <h2>1. Controller</h2>
+    <p>
+      The data controller for this application is:<br>
+      <strong>Filip Gallat</strong><br>
+      Contact: <a href="mailto:gallatf@email.cz">gallatf@email.cz</a>
+    </p>
+    <p>If you have any questions about how your personal data is handled, please contact us at the address above.</p>
+
+    <h2>2. What data we collect and why</h2>
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Purpose</th><th>Stored where</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Email address</td>
+          <td>Account identification and authentication</td>
+          <td>Supabase (server)</td>
+        </tr>
+        <tr>
+          <td>Password (hashed)</td>
+          <td>Account security</td>
+          <td>Supabase (server, hashed — we never see the plaintext)</td>
+        </tr>
+        <tr>
+          <td>Learning progress (verb scores, practice history)</td>
+          <td>Saving your progress and enabling cross-device sync</td>
+          <td>Your browser (localStorage) + Supabase (server, signed-in users only)</td>
+        </tr>
+        <tr>
+          <td>Session token (JWT)</td>
+          <td>Keeping you logged in between page visits</td>
+          <td>Your browser (localStorage, managed by Supabase client library)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>We do not collect any other personal data. We do not run analytics, advertising, or tracking of any kind.</p>
+
+    <h2>3. Legal basis</h2>
+    <p>We process your personal data on the following bases:</p>
+    <ul>
+      <li><strong>Performance of a contract</strong> (Art. 6(1)(b) GDPR) — your email and password are necessary to provide the account and cross-device sync service you signed up for.</li>
+      <li><strong>Legitimate interest</strong> (Art. 6(1)(f) GDPR) — storing learning progress locally in your browser so the app functions without requiring an account.</li>
+    </ul>
+
+    <h2>4. Data processor — Supabase</h2>
+    <p>
+      Account data and server-side progress are stored with <strong>Supabase Inc.</strong> (San Francisco, CA, USA),
+      acting as our data processor under a Data Processing Agreement. Data transfers from the EU to Supabase
+      are covered by Standard Contractual Clauses (SCCs) in accordance with Art. 46 GDPR.
+    </p>
+    <p>Supabase's privacy information: <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></p>
+
+    <h2>5. Data retention</h2>
+    <p>
+      We retain your account and progress data for as long as your account is active.
+      Accounts and associated progress data that have had no activity for <strong>2 years</strong> are deleted automatically.
+    </p>
+    <p>
+      When you delete your account using the in-app "Delete account" option, your data is removed from the live
+      database immediately. Supabase may retain encrypted database backups for up to 7 days after deletion as
+      part of their standard infrastructure — this is outside our direct control. Backups cannot be used to
+      restore individual accounts.
+    </p>
+    <p>Anonymous progress stored only in your browser (localStorage) stays on your device until you clear it manually via the "Reset" button or your browser settings.</p>
+
+    <h2>6. Your rights</h2>
+    <p>Under GDPR, you have the following rights regarding your personal data:</p>
+    <ul>
+      <li><strong>Access (Art. 15)</strong> — request a copy of the data we hold about you.</li>
+      <li><strong>Rectification (Art. 16)</strong> — ask us to correct inaccurate data.</li>
+      <li><strong>Erasure (Art. 17)</strong> — delete your account and all associated data using the in-app "Delete account" option, or by contacting us.</li>
+      <li><strong>Portability (Art. 20)</strong> — download your progress data at any time using the "Export progress" button in the Report screen. The export includes your account details and full learning history.</li>
+      <li><strong>Restriction (Art. 18)</strong> — ask us to restrict processing of your data in certain circumstances.</li>
+      <li><strong>Objection (Art. 21)</strong> — object to processing based on legitimate interest.</li>
+    </ul>
+    <p>To exercise any of these rights, contact us at <a href="mailto:gallatf@email.cz">gallatf@email.cz</a>. We will respond within 30 days.</p>
+
+    <h2>7. Right to complain</h2>
+    <p>
+      You have the right to lodge a complaint with your national data protection supervisory authority.
+      In the Czech Republic, this is the <strong>Úřad pro ochranu osobních údajů (ÚOOÚ)</strong>:<br>
+      <a href="https://www.uoou.cz" target="_blank" rel="noopener">www.uoou.cz</a> — Pplk. Sochora 27, 170 00 Praha 7
+    </p>
+    <p>If you are in another EU member state, you may contact your local supervisory authority instead.</p>
+
+    <h2>8. Changes to this policy</h2>
+    <p>If we make material changes to this policy, we will update the "Last updated" date above. Continued use of the app after changes constitutes acceptance of the updated policy.</p>
+  </div>
+</body>
+</html>

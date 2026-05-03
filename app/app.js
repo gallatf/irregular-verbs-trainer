@@ -1,4 +1,4 @@
-import { normalizeInput, matchesExpected, isNearMiss, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary } from './logic.js';
+import { normalizeInput, matchesExpected, isNearMiss, pickWeighted, filteredDeck, verbStatus, reportRow, reportSummary, computeNextDue, nextDueIn } from './logic.js';
 
 let supabase = null;
 let emailConfirmationRequired = true; // updated from supabase_config.js at init
@@ -8,9 +8,10 @@ const state = {
   current: null,
   mode: 'flashcard', // 'flashcard' | 'type'
   retrying: false,   // true while awaiting a near-miss second attempt
-  filter: 'all',    // 'all' | 'new' | 'difficult' | 'due'
+  filter: 'due',    // 'all' | 'new' | 'difficult' | 'due'
   progress: {},     // { [verbId]: { seen, knew, missed, history: boolean[] } }
   session: { seen: 0, knew: 0, missed: 0 },
+  sessionQueue: [],  // in-memory only; not persisted
   report: { filter: 'all', sort: 'accuracy' },
   auth: { user: null, formMode: 'signin' }, // formMode: 'signin' | 'signup'
 };
@@ -21,6 +22,9 @@ const el = {
   error: document.getElementById('error-state'),
   cardState: document.getElementById('card-state'),
   emptyFilter: document.getElementById('empty-filter-state'),
+  emptyFilterMsg: document.getElementById('empty-filter-msg'),
+  emptyFilterSub: document.getElementById('empty-filter-sub'),
+  emptyFilterActions: document.getElementById('empty-filter-actions'),
   infinitive: document.getElementById('infinitive'),
   answer: document.getElementById('answer'),
   pastSimple: document.getElementById('past-simple'),
@@ -50,10 +54,8 @@ const el = {
   btnModeFlashcard: document.getElementById('btn-mode-flashcard'),
   btnModeType: document.getElementById('btn-mode-type'),
   btnFilterAll: document.getElementById('btn-filter-all'),
-  btnFilterNew: document.getElementById('btn-filter-new'),
   btnFilterDifficult: document.getElementById('btn-filter-difficult'),
   btnFilterDue: document.getElementById('btn-filter-due'),
-  btnFilterReset: document.getElementById('btn-filter-reset'),
   btnReport: document.getElementById('btn-report'),
   btnHelp: document.getElementById('btn-help'),
   helpState: document.getElementById('help-state'),
@@ -147,10 +149,11 @@ function updateStats() {
 
 function recordResult(verbId, knew) {
   if (!state.progress[verbId]) state.progress[verbId] = { seen: 0, knew: 0, missed: 0, history: [] };
-  state.progress[verbId].seen += 1;
-  if (knew) state.progress[verbId].knew += 1;
-  else state.progress[verbId].missed += 1;
-  state.progress[verbId].history.push(knew);
+  const p = state.progress[verbId];
+  p.seen += 1;
+  if (knew) p.knew += 1; else p.missed += 1;
+  p.history.push(knew);
+  Object.assign(p, computeNextDue(p, knew));
   saveProgress();
 }
 
@@ -167,7 +170,7 @@ function rate(knew) {
   recordResult(state.current.id, knew);
   state.session.seen += 1;
   if (knew) state.session.knew += 1;
-  else state.session.missed += 1;
+  else { state.session.missed += 1; requeueCurrentVerb(); }
   updateStats();
   nextCard();
 }
@@ -210,7 +213,7 @@ function finaliseAnswer(psCorrect, ppCorrect, allCorrect) {
   recordResult(state.current.id, allCorrect);
   state.session.seen += 1;
   if (allCorrect) state.session.knew += 1;
-  else state.session.missed += 1;
+  else { state.session.missed += 1; requeueCurrentVerb(); }
   updateStats();
 
   el.card.classList.add(allCorrect ? 'card--correct' : 'card--incorrect');
@@ -245,16 +248,73 @@ function setResultRow(userEl, correctEl, userValue, correct, expected) {
   }
 }
 
+function showEmptyFilterState() {
+  hide(el.cardState);
+  const difficultCount = filteredDeck(state.verbs, 'difficult', state.progress).length;
+  const nextDue = nextDueIn(state.progress);
+  const nextDueText = nextDue ? `Next verb due in ${nextDue}.` : '';
+  const actions = [];
+
+  if (state.filter === 'due') {
+    el.emptyFilterMsg.textContent = 'All caught up!';
+    if (difficultCount > 0) {
+      actions.push({ label: `Practice ${difficultCount} difficult verb${difficultCount === 1 ? '' : 's'}`, filter: 'difficult', primary: true });
+      actions.push({ label: 'Practice all verbs', filter: 'all', primary: false });
+    } else {
+      actions.push({ label: 'Practice all verbs', filter: 'all', primary: true });
+    }
+  } else if (state.filter === 'difficult') {
+    el.emptyFilterMsg.textContent = 'No difficult verbs — great work!';
+    actions.push({ label: 'Practice all verbs', filter: 'all', primary: true });
+  } else {
+    el.emptyFilterMsg.textContent = 'No verbs match this filter yet.';
+    actions.push({ label: 'Show all verbs', filter: 'all', primary: true });
+  }
+
+  el.emptyFilterSub.textContent = nextDueText;
+  el.emptyFilterActions.innerHTML = '';
+  actions.forEach(({ label, filter, primary }) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = `btn ${primary ? 'btn-primary' : 'btn-secondary'}`;
+    btn.addEventListener('click', () => setFilter(filter));
+    el.emptyFilterActions.appendChild(btn);
+  });
+
+  show(el.emptyFilter);
+}
+
+function startSession(deck) {
+  const queue = [];
+  const remaining = [...deck];
+  let lastId = state.current?.id ?? null;
+  while (remaining.length) {
+    const next = pickWeighted(remaining, state.progress, lastId);
+    queue.push(next);
+    remaining.splice(remaining.findIndex(v => v.id === next.id), 1);
+    lastId = next.id;
+  }
+  state.sessionQueue = queue;
+}
+
+function requeueCurrentVerb() {
+  const insertAt = Math.min(3, state.sessionQueue.length);
+  state.sessionQueue.splice(insertAt, 0, state.current);
+}
+
 function nextCard() {
-  const deck = filteredDeck(state.verbs, state.filter, state.progress);
-  if (!deck.length) {
-    hide(el.cardState);
-    show(el.emptyFilter);
+  if (state.sessionQueue.length > 0) {
+    hide(el.emptyFilter);
+    show(el.cardState);
+    showCard(state.sessionQueue.shift());
     return;
   }
+  const deck = filteredDeck(state.verbs, state.filter, state.progress);
+  if (!deck.length) { showEmptyFilterState(); return; }
+  startSession(deck);
   hide(el.emptyFilter);
   show(el.cardState);
-  showCard(pickWeighted(deck, state.progress, state.current?.id));
+  showCard(state.sessionQueue.shift());
 }
 
 // Mode switching
@@ -274,7 +334,6 @@ function setMode(mode) {
 function applyFilterButtons(filter) {
   [
     [el.btnFilterAll, 'all'],
-    [el.btnFilterNew, 'new'],
     [el.btnFilterDifficult, 'difficult'],
     [el.btnFilterDue, 'due'],
   ].forEach(([btn, value]) => {
@@ -285,6 +344,7 @@ function applyFilterButtons(filter) {
 
 function setFilter(filter) {
   state.filter = filter;
+  state.sessionQueue = [];
   applyFilterButtons(filter);
   saveProgress();
   nextCard();
@@ -311,7 +371,7 @@ function loadProgress() {
     const saved = JSON.parse(raw);
     if (saved.progress) state.progress = saved.progress;
     if (saved.mode) state.mode = saved.mode;
-    if (saved.filter) state.filter = saved.filter;
+    if (saved.filter) state.filter = saved.filter === 'new' ? 'due' : saved.filter;
   } catch { /* corrupted data — start fresh */ }
 }
 
@@ -534,8 +594,7 @@ function showAuth() {
 function hideAuth() {
   hide(el.authState);
   const deck = filteredDeck(state.verbs, state.filter, state.progress);
-  if (!deck.length) show(el.emptyFilter);
-  else show(el.cardState);
+  if (!deck.length) showEmptyFilterState(); else show(el.cardState);
 }
 
 function resetAuthForm() {
@@ -725,8 +784,7 @@ function showHelp() {
 function hideHelp() {
   hide(el.helpState);
   const deck = filteredDeck(state.verbs, state.filter, state.progress);
-  if (!deck.length) show(el.emptyFilter);
-  else show(el.cardState);
+  if (!deck.length) showEmptyFilterState(); else show(el.cardState);
 }
 
 function showReport() {
@@ -756,11 +814,7 @@ function hideReport() {
   hide(el.reportState);
   // Restore whichever practice state was active
   const deck = filteredDeck(state.verbs, state.filter, state.progress);
-  if (!deck.length) {
-    show(el.emptyFilter);
-  } else {
-    show(el.cardState);
-  }
+  if (!deck.length) showEmptyFilterState(); else show(el.cardState);
 }
 
 // Event listeners
@@ -773,10 +827,8 @@ el.btnNext.addEventListener('click', nextCard);
 el.btnModeFlashcard.addEventListener('click', () => setMode('flashcard'));
 el.btnModeType.addEventListener('click', () => setMode('type'));
 el.btnFilterAll.addEventListener('click', () => setFilter('all'));
-el.btnFilterNew.addEventListener('click', () => setFilter('new'));
 el.btnFilterDifficult.addEventListener('click', () => setFilter('difficult'));
 el.btnFilterDue.addEventListener('click', () => setFilter('due'));
-el.btnFilterReset.addEventListener('click', () => setFilter('all'));
 el.btnReport.addEventListener('click', () => {
   if (el.reportState.classList.contains('hidden')) showReport();
   else hideReport();
@@ -895,13 +947,22 @@ async function init() {
     if (state.auth.user) {
       await loadFromServer();
     }
+    if (filteredDeck(state.verbs, 'due', state.progress).length > 0) {
+      state.filter = 'due';
+    }
     updateAuthUI();
     if (supabase) show(el.authBar);
     setMode(state.mode);           // safe: state.current is null, won't call showCard
     applyFilterButtons(state.filter);
+    const deck = filteredDeck(state.verbs, state.filter, state.progress);
     hide(el.loading);
-    show(el.cardState);
-    showCard(pickWeighted(state.verbs, state.progress));
+    if (deck.length) {
+      startSession(deck);
+      show(el.cardState);
+      showCard(state.sessionQueue.shift());
+    } else {
+      showEmptyFilterState();
+    }
   } catch {
     hide(el.loading);
     show(el.error);

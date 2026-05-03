@@ -538,12 +538,12 @@ describe('app integration', () => {
       app.setFilter('difficult');
       expect(app.el.btnFilterDifficult.classList.contains('active')).toBe(true);
       expect(app.el.btnFilterAll.classList.contains('active')).toBe(false);
-      expect(app.el.btnFilterNew.classList.contains('active')).toBe(false);
+      expect(app.el.btnFilterDue.classList.contains('active')).toBe(false);
     });
 
     it('updates aria-pressed on filter buttons', () => {
-      app.setFilter('new');
-      expect(app.el.btnFilterNew.getAttribute('aria-pressed')).toBe('true');
+      app.setFilter('due');
+      expect(app.el.btnFilterDue.getAttribute('aria-pressed')).toBe('true');
       expect(app.el.btnFilterAll.getAttribute('aria-pressed')).toBe('false');
     });
 
@@ -561,9 +561,10 @@ describe('app integration', () => {
       expect(app.el.cardState.classList.contains('hidden')).toBe(false);
     });
 
-    it('btn-filter-reset switches back to all filter', () => {
-      app.setFilter('difficult');
-      app.el.btnFilterReset.click();
+    it('empty state actions include a "Practice all verbs" button that switches to all filter', () => {
+      app.setFilter('difficult'); // deck empty, shows empty state
+      const allBtn = app.el.emptyFilterActions.querySelector('button');
+      allBtn.click();
       expect(app.state.filter).toBe('all');
       expect(app.el.cardState.classList.contains('hidden')).toBe(false);
     });
@@ -593,9 +594,11 @@ describe('app integration', () => {
       expect(app.el.emptyFilter.classList.contains('hidden')).toBe(true);
     });
 
-    it('"due" filter is empty when all verbs are known', () => {
-      app.state.progress['go'] = { seen: 2, knew: 2, missed: 0 };
-      app.state.progress['be'] = { seen: 2, knew: 2, missed: 0 };
+    it('"due" filter is empty when all verbs are scheduled in the future', () => {
+      const futureDate = Date.now() + 86400000 * 7;
+      app.state.verbs.forEach(v => {
+        app.state.progress[v.id] = { seen: 2, knew: 2, missed: 0, history: [], due: futureDate };
+      });
       app.setFilter('due');
       expect(app.el.emptyFilter.classList.contains('hidden')).toBe(false);
     });
@@ -645,22 +648,26 @@ describe('app integration', () => {
     });
 
     it('loadProgress restores progress, mode and filter into state', async () => {
+      const farFuture = Date.now() + 86400000 * 7;
       store['ivt-progress'] = JSON.stringify({
-        progress: { go: { seen: 3, knew: 2, missed: 1, history: [true, false, true] } },
+        progress: {
+          go: { seen: 3, knew: 2, missed: 1, history: [true, false, true], due: farFuture },
+          be: { seen: 1, knew: 1, missed: 0, history: [true], due: farFuture },
+        },
         mode: 'type',
-        filter: 'new',
+        filter: 'difficult',
       });
       await app.init();
       expect(app.state.progress['go'].knew).toBe(2);
       expect(app.state.mode).toBe('type');
-      expect(app.state.filter).toBe('new');
+      expect(app.state.filter).toBe('difficult');
     });
 
     it('loadProgress is a no-op when localStorage is empty', async () => {
       await app.init();
       expect(app.state.progress).toEqual({});
       expect(app.state.mode).toBe('flashcard');
-      expect(app.state.filter).toBe('all');
+      expect(app.state.filter).toBe('due');
     });
 
     it('loadProgress ignores corrupted JSON without throwing', async () => {

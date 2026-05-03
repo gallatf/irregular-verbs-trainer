@@ -45,10 +45,9 @@
 
       <div class="header-bottom">
         <div class="filter-toggle" role="group" aria-label="Verb filter">
-          <button id="btn-filter-due" class="filter-btn" aria-pressed="false">New + Difficult</button>
-          <button id="btn-filter-new" class="filter-btn" aria-pressed="false">New</button>
+          <button id="btn-filter-due" class="filter-btn active" aria-pressed="true">Due</button>
           <button id="btn-filter-difficult" class="filter-btn" aria-pressed="false">Difficult</button>
-          <button id="btn-filter-all" class="filter-btn active" aria-pressed="true">All</button>
+          <button id="btn-filter-all" class="filter-btn" aria-pressed="false">All</button>
         </div>
         <button id="btn-report" class="btn-report">Report</button>
         <button id="btn-help" class="btn-help-icon" aria-label="Help">?</button>
@@ -106,20 +105,21 @@
           <section class="help-section">
             <h2 class="help-heading">Filters</h2>
             <dl class="help-dl">
-              <dt>All</dt>
-              <dd>Practise every verb in the set.</dd>
-              <dt>New + Difficult</dt>
-              <dd>Focus on verbs you haven't seen yet and ones you find hard — the most efficient way to study.</dd>
+              <dt>Due</dt>
+              <dd>Verbs scheduled for review today, plus any you haven't seen yet. This is the recommended daily mode — the app shows you each verb just before you're likely to forget it.</dd>
               <dt>New</dt>
               <dd>Only verbs you haven't practised at all.</dd>
               <dt>Difficult</dt>
               <dd>Only verbs where you've missed more than you knew.</dd>
+              <dt>All</dt>
+              <dd>Every verb in the set, regardless of schedule.</dd>
             </dl>
           </section>
 
           <section class="help-section">
             <h2 class="help-heading">How verbs are selected</h2>
-            <p class="help-p">Each card is picked at random, but difficult verbs appear more often than easy ones. Recent answers count more than older ones — so a verb you got right three times in a row gradually fades into the background, while one you keep missing comes up more often. The same verb never appears twice in a row.</p>
+            <p class="help-p">The app uses spaced repetition (SM-2 algorithm): each verb you answer correctly is scheduled to reappear after a growing interval — 1 day, then 4 days, then roughly doubling each time. A miss resets the interval to 1 day. This ensures you review each verb just before you'd forget it, which is the most efficient way to build long-term memory.</p>
+            <p class="help-p" style="margin-top:0.625rem">Within a session, harder verbs (recent misses) are picked more often than easy ones. The same verb never appears twice in a row.</p>
           </section>
 
           <section class="help-section">
@@ -228,8 +228,9 @@
       </div>
 
       <div id="empty-filter-state" class="state hidden">
-        <p>No verbs match this filter yet.</p>
-        <button id="btn-filter-reset" class="btn btn-primary" style="margin-top:1rem">Show all verbs</button>
+        <p id="empty-filter-msg"></p>
+        <p id="empty-filter-sub" class="empty-filter-sub"></p>
+        <div id="empty-filter-actions" class="empty-filter-actions"></div>
       </div>
 
       <div id="error-state" class="state hidden">

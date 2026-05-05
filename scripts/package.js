@@ -50,7 +50,10 @@ async function buildPackage(env, ref) {
     cpSync(join(ROOT, 'app', f), join(stageDir, 'app', f));
   }
   cpSync(configSrc, join(stageDir, 'app', 'supabase_config.js'));
-  cpSync(join(ROOT, 'data', 'irregular-verbs.json'), join(stageDir, 'data', 'irregular-verbs.json'));
+  const activeList = env === 'prod' ? 'irregular-verbs.full.json' : 'irregular-verbs.short.json';
+  cpSync(join(ROOT, 'data', 'irregular-verbs.short.json'), join(stageDir, 'data', 'irregular-verbs.short.json'));
+  cpSync(join(ROOT, 'data', 'irregular-verbs.full.json'), join(stageDir, 'data', 'irregular-verbs.full.json'));
+  cpSync(join(ROOT, 'data', activeList), join(stageDir, 'data', 'irregular-verbs.json'));
   cpSync(join(ROOT, 'index.html'), join(stageDir, 'index.html'));
 
   writeFileSync(

@@ -1,0 +1,10 @@
+[
+  {"id":"break","infinitive":"break","pastSimple":"broke","pastParticiple":"broken","translationCs":"rozbít","difficulty":2},
+  {"id":"fall","infinitive":"fall","pastSimple":"fell","pastParticiple":"fallen","translationCs":"spadnout","difficulty":2},
+  {"id":"feel","infinitive":"feel","pastSimple":"felt","pastParticiple":"felt","translationCs":"cítit","difficulty":1},
+  {"id":"lie","infinitive":"lie","pastSimple":"lay","pastParticiple":"lain","translationCs":"ležet","difficulty":3},
+  {"id":"lose","infinitive":"lose","pastSimple":"lost","pastParticiple":"lost","translationCs":"ztratit","difficulty":1},
+  {"id":"make","infinitive":"make","pastSimple":"made","pastParticiple":"made","translationCs":"udělat, vyrobit","difficulty":1},
+  {"id":"mean","infinitive":"mean","pastSimple":"meant","pastParticiple":"meant","translationCs":"znamenat","difficulty":2},
+  {"id":"write","infinitive":"write","pastSimple":"wrote","pastParticiple":"written","translationCs":"psát","difficulty":2}
+]

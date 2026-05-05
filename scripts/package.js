@@ -1,6 +1,7 @@
-import { readFileSync, mkdirSync, rmSync, cpSync, existsSync, createWriteStream } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, existsSync, createWriteStream } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 import archiver from 'archiver';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -18,6 +19,14 @@ function fail(msg) {
   process.exit(1);
 }
 
+function getGitRef() {
+  try {
+    return execSync('git describe --tags --exact-match', { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+  } catch {
+    return execSync('git rev-parse --short HEAD', { encoding: 'utf8' }).trim();
+  }
+}
+
 function validateConfig(configPath) {
   const src = readFileSync(configPath, 'utf8');
   if (src.includes('your-project-id') || src.includes('your-anon-key')) {
@@ -25,7 +34,7 @@ function validateConfig(configPath) {
   }
 }
 
-async function buildPackage(env, version) {
+async function buildPackage(env, ref) {
   const configSrc = join(ROOT, 'app', `supabase_config.${env}.js`);
   if (!existsSync(configSrc)) {
     fail(`app/supabase_config.${env}.js not found. Copy app/supabase_config.example.js and fill in real credentials.`);
@@ -44,7 +53,12 @@ async function buildPackage(env, version) {
   cpSync(join(ROOT, 'data', 'irregular-verbs.json'), join(stageDir, 'data', 'irregular-verbs.json'));
   cpSync(join(ROOT, 'index.html'), join(stageDir, 'index.html'));
 
-  const archiveName = `irregular-verbs-trainer-v${version}-${env}.zip`;
+  writeFileSync(
+    join(stageDir, 'version.json'),
+    JSON.stringify({ ref, builtAt: new Date().toISOString() }, null, 2)
+  );
+
+  const archiveName = `irregular-verbs-trainer-${ref}-${env}.zip`;
   const archivePath = join(ROOT, 'dist', archiveName);
 
   let bytes = 0;
@@ -61,7 +75,7 @@ async function buildPackage(env, version) {
   console.log(`  dist/${archiveName}  (${(bytes / 1024).toFixed(1)} KB)`);
 }
 
-const { version } = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+const ref = getGitRef();
 const envIndex = process.argv.indexOf('--env');
 const envArg = envIndex !== -1 ? process.argv[envIndex + 1] : null;
 const envs = envArg ? [envArg] : ['dev', 'prod'];
@@ -70,8 +84,8 @@ if (envArg && !['dev', 'prod'].includes(envArg)) {
   fail(`Unknown env "${envArg}". Use --env dev or --env prod.`);
 }
 
-console.log(`\nPackaging irregular-verbs-trainer v${version}\n`);
+console.log(`\nPackaging irregular-verbs-trainer @ ${ref}\n`);
 for (const env of envs) {
-  await buildPackage(env, version);
+  await buildPackage(env, ref);
 }
 console.log('\nDone.');

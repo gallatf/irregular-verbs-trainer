@@ -25,3 +25,9 @@ replay_pid*
 
 # Supabase credentials — never commit real keys
 app/supabase_config.js
+app/supabase_config.dev.js
+app/supabase_config.prod.js
+
+# Build output
+dist/
+node_modules/
